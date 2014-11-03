@@ -19,6 +19,7 @@
 // ThirdParty/logog
 #include "logog/include/logog.hpp"
 
+#include "ThirdParty/zlib/zconf.h"
 #include "zlib/zlib.h"
 
 #include "zLibDataCompressor.h"
