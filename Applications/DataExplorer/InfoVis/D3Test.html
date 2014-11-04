@@ -21,6 +21,27 @@
         .on("mouseover", function(){d3.select(this).style("fill", "aliceblue");})
         .on("mouseout", function(){d3.select(this).style("fill", "white");});
 
+    // qtPushButton was passed from Qt side and its signal clicked is connected
+    // with a JavaScript function
+    qtPushButton.clicked.connect(someFunction);
+    var buttonText = qtPushButton.text;
+    function someFunction()
+    {
+        d3.select("#viz")
+            .append("text")
+            .text("Clicked! ");
+
+        d3.select("#viz").selectAll("circle").style("fill", "red");
+
+        // Set back the buttons text (see below)
+        qtPushButton.text = buttonText;
+    }
+
+    // Pass data back to Qt
+    sampleSVG.selectAll("circle").on("click", function() {
+        qtPushButton.text = "Javascript takes over!";
+    })
+
     </script>
 </body>
 </html>

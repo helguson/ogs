@@ -14,10 +14,15 @@
 
 #include "WebViewWidget.h"
 
+#include <QWebFrame>
+
 WebViewWidget::WebViewWidget(QWidget* parent)
 : QWidget(parent)
 {
 	setupUi(this);
+
+	QWebFrame *frame = this->webView->page()->mainFrame();
+	connect(frame, SIGNAL(javaScriptWindowObjectCleared()), this, SLOT(addToJavascript()));
 }
 
 
@@ -25,8 +30,8 @@ WebViewWidget::~WebViewWidget()
 {
 }
 
-//void WebViewDialog::loadUrl(QString url)
-//{
-//	this->webView->load(QUrl(url));
-//	//this->webView->load(QUrl("http://google.com"));
-//}
+void WebViewWidget::addToJavascript()
+{
+	QWebFrame *frame = this->webView->page()->mainFrame();
+	frame->addToJavaScriptWindowObject("qtPushButton", this->pushButton);
+}

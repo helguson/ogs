@@ -35,6 +35,7 @@ public slots:
 	/// Load the given url
 	//void loadUrl(QString url);
 
+	void addToJavascript();
 };
 
 #endif //WEBVIEWDIALOG_H
