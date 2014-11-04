@@ -15,23 +15,21 @@
 #ifndef WEBVIEWDIALOG_H
 #define WEBVIEWDIALOG_H
 
-#include "ui_WebViewDialog.h"
-
-#include <QtGui/QDialog>
+#include "ui_WebViewWidget.h"
 
 
 /**
  * \brief A dialog for specifying the parameters to construct a mesh based on a raster
  */
-class WebViewDialog : public QDialog, public Ui_WebViewDialog
+class WebViewWidget : public QWidget, public Ui_WebViewWidget
 {
 	Q_OBJECT
 
 public:
 	/// Constructor
-	WebViewDialog(QDialog* parent = 0);
+	WebViewWidget(QWidget* parent = 0);
 
-	~WebViewDialog(void);
+	~WebViewWidget(void);
 
 public slots:
 	/// Load the given url

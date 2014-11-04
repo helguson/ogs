@@ -47,7 +47,7 @@
 #include "SetNameDialog.h"
 #include "VisPrefsDialog.h"
 #include "VtkAddFilterDialog.h"
-#include "WebViewDialog.h"
+#include "WebViewWidget.h"
 
 #include "SHPImportDialog.h"
 
@@ -1085,10 +1085,11 @@ void MainWindow::showDataExplorerSettingsDialog()
 
 void MainWindow::FEMTestStart()
 {
-	WebViewDialog dlg;
+	WebViewWidget *webViewWidget = new WebViewWidget();
+	webViewWidget->setAttribute(Qt::WA_DeleteOnClose);
 	//dlg.webView->load(QUrl("http://bl.ocks.org/mbostock/4061502"));
-	dlg.webView->load(QUrl("qrc:///HTML/D3Test.html"));
-	dlg.exec();
+	webViewWidget->webView->load(QUrl("qrc:///HTML/D3Test.html"));
+	webViewWidget->show();
 }
 
 void MainWindow::ShowWindow()

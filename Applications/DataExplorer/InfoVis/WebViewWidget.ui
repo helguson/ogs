@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>WebViewDialog</class>
- <widget class="QDialog" name="WebViewDialog">
+ <class>WebViewWidget</class>
+ <widget class="QWidget" name="WebViewWidget">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>440</width>
-    <height>399</height>
+    <width>756</width>
+    <height>440</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Form</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout">
+  <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QWebView" name="webView">
      <property name="url">

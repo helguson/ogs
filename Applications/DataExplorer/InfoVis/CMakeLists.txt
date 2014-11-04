@@ -1,11 +1,11 @@
 # Source files
 set( SOURCES
-	WebViewDialog.cpp
+	WebViewWidget.cpp
 )
 
 # Moc headers
 set( MOC_HEADERS
-	WebViewDialog.h
+	WebViewWidget.h
 )
 
 # Header files
@@ -14,7 +14,7 @@ set( HEADERS
 
 # UI files
 set ( UIS
-	WebViewDialog.ui
+	WebViewWidget.ui
 )
 
 # Put moc files in a project folder

@@ -2,7 +2,7 @@
  * \file
  * \author Lars Bilke
  * \date   2014-11-03
- * \brief  Implementation of the WebViewDialog class.
+ * \brief  Implementation of the WebViewWidget class.
  *
  * \copyright
  * Copyright (c) 2014-2014, OpenGeoSys Community (http://www.opengeosys.org)
@@ -12,16 +12,16 @@
  *
  */
 
-#include "WebViewDialog.h"
+#include "WebViewWidget.h"
 
-WebViewDialog::WebViewDialog(QDialog* parent)
-: QDialog(parent)
+WebViewWidget::WebViewWidget(QWidget* parent)
+: QWidget(parent)
 {
 	setupUi(this);
 }
 
 
-WebViewDialog::~WebViewDialog()
+WebViewWidget::~WebViewWidget()
 {
 }
 
