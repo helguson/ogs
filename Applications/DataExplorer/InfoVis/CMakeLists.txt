@@ -44,3 +44,23 @@ target_include_directories( InfoVis PUBLIC
 target_link_libraries( InfoVis ${QT_LIBRARIES} )
 
 set_property(TARGET QtBase PROPERTY FOLDER "DataExplorer")
+
+
+#############################
+### copy additional files ###
+#############################
+
+set(
+	FILES_TO_BE_COPIED
+	D3Test.html
+)
+
+set(
+	DESTINATION_FOLDER
+	${EXECUTABLE_OUTPUT_PATH}/QtWebkitRessources
+)
+
+file(
+	COPY ${FILES_TO_BE_COPIED}
+	DESTINATION ${DESTINATION_FOLDER}
+)

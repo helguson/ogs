@@ -28,7 +28,7 @@ SET( UIS
 # Run Qts user interface compiler uic on .ui files
 QT4_WRAP_UI( UI_HEADERS ${UIS} )
 
-QT4_ADD_RESOURCES( QTRESOURCES ./Img/icons.qrc ./InfoVis/html.qrc )
+QT4_ADD_RESOURCES( QTRESOURCES ./Img/icons.qrc )
 
 # Run Qts meta object compiler moc on header files
 QT4_WRAP_CPP( MOC_SOURCES ${MOC_HEADERS} )
