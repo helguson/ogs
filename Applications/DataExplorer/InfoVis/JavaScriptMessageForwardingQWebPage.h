@@ -1,3 +1,10 @@
+/**
+ * \author Thomas Hennig
+ * \date   2014-12-09
+ * \brief  extension of QWebView to forward JavaScript console messages
+ */
+
+
 #ifndef JAVASCRIPTMESSAGEFORWARDINGQWEBPAGE_H
 #define JAVASCRIPTMESSAGEFORWARDINGQWEBPAGE_H
 
