@@ -1,3 +1,6 @@
+// define infovis package / conglomerate- / accumulation-object
+infovis = {};
+
 // removes error message of unavailability of JavaScript in case of availability of JavaScript
 function removeMessageOfUnavailabilityOfJavaScript(){
 
@@ -22,12 +25,12 @@ function isQtPresent(){
 
 function setUpSampleSVG(){
 
-	var sampleSVG = d3.select("#viz")
+	infovis.sampleSVG = d3.select("#viz")
 		.append("svg")
 		.attr("width", 100)
 		.attr("height", 100);
 
-	sampleSVG.append("circle")
+	infovis.sampleSVG.append("circle")
 		.style("stroke", "gray")
 		.style("fill", "white")
 		.attr("r", 40)
@@ -59,7 +62,7 @@ function setUpEventPassingFromQtToJS(){
 function setUpEventPassingFromJSToQt(){
 
 	// Pass data back to Qt
-	sampleSVG.selectAll("circle").on(
+	infovis.sampleSVG.selectAll("circle").on(
 		"click",
 		function(){
 			qtPushButton.text = "Javascript takes over!";
