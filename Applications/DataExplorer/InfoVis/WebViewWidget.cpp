@@ -13,6 +13,7 @@
  */
 
 #include "WebViewWidget.h"
+#include "JavaScriptMessageForwardingQWebPage.h"
 
 #include <QWebFrame>
 
@@ -20,6 +21,10 @@ WebViewWidget::WebViewWidget(QWidget* parent)
 : QWidget(parent)
 {
 	setupUi(this);
+	
+	// replace QWebPage element in order to forward JavaScript console messages
+	QWebPage* javaScriptMessageForwardingQWebPage = new JavaScriptMessageForwardingQWebPage(this->webView);
+	this->webView->setPage(javaScriptMessageForwardingQWebPage);
 
 	QWebFrame *frame = this->webView->page()->mainFrame();
 	connect(frame, SIGNAL(javaScriptWindowObjectCleared()), this, SLOT(addToJavascript()));

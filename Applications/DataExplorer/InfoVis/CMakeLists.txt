@@ -1,11 +1,13 @@
 # Source files
 set( SOURCES
 	WebViewWidget.cpp
+	JavaScriptMessageForwardingQWebPage.cpp
 )
 
 # Moc headers
 set( MOC_HEADERS
 	WebViewWidget.h
+	JavaScriptMessageForwardingQWebPage.h
 )
 
 # Header files
