@@ -16,6 +16,8 @@
 #include "JavaScriptMessageForwardingQWebPage.h"
 
 #include <QWebFrame>
+#include <QVariant>
+#include <iostream>
 
 WebViewWidget::WebViewWidget(QWidget* parent)
 : QWidget(parent)
@@ -45,8 +47,35 @@ void WebViewWidget::addToJavascript()
 
 void WebViewWidget::initiateDataTransfer(){
 	
+	// generate test data
+	QString testHeader = QString("name,colour,age");
+	QString testData =  QString("Tina,green,22");
+	QRegExp delimiter = QRegExp(",");
+	
+	QVariantMap map = QVariantMap();
+	
+	QStringList headerList = testHeader.split(delimiter);
+	QStringList dataList = testData.split(delimiter);
+	
+	if(headerList.length() == dataList.length()){
+		
+		for(int i = 0; i < headerList.length(); i++){
+			
+			QString key = QString(headerList.at(i));
+			QVariant value = QVariant(dataList.at(i));
+			
+			//map.insert(headerList.at(i),QVariant(dataList.at(i)));
+			map.insert(key,value);
+		}
+		
+		std::cout << map[headerList.at(0)].toString().toStdString() << std::endl;
+	}
+	else{
+		// TODO: either warn or handle it
+		std::cout << "element count of header and data is not equal" << std::endl;
+	}
+	
 	this->gate->transferData(this->transferCount);
-	this->transferCount++;
 }
 
 
