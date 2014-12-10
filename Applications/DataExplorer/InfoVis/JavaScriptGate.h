@@ -9,6 +9,7 @@
 #define JAVASCRIPTGATE_H
 
 #include <QObject>
+#include <QVariant>
 
 class JavaScriptGate : public QObject
 {
@@ -20,10 +21,10 @@ public:
 	 * @brief triggers signal 'transferredData' to be send with given 'data'
 	 * @param data that will be send
 	 */
-	void transferData(int data);
+	void transferData(QVariantMap data);
 	
 signals:
-	void transferredData(int data);
+	void transferredData(QVariantMap data);
 	
 public slots:
 	

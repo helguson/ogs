@@ -67,15 +67,13 @@ void WebViewWidget::initiateDataTransfer(){
 			//map.insert(headerList.at(i),QVariant(dataList.at(i)));
 			map.insert(key,value);
 		}
-		
-		std::cout << map[headerList.at(0)].toString().toStdString() << std::endl;
 	}
 	else{
 		// TODO: either warn or handle it
 		std::cout << "element count of header and data is not equal" << std::endl;
 	}
 	
-	this->gate->transferData(this->transferCount);
+	this->gate->transferData(map);
 }
 
 

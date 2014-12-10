@@ -5,7 +5,7 @@ JavaScriptGate::JavaScriptGate(QObject *parent) :
 {
 }
 
-void JavaScriptGate::transferData(int data){
+void JavaScriptGate::transferData(QVariantMap data){
 	
 	emit transferredData(data);
 }

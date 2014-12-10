@@ -41,7 +41,15 @@
 
 			function receiveData(data){
 
-				console.log("received: " + data.toString());
+				console.log("received " + data.toString());
+
+				var message = "";
+
+				for(key in data){
+					message += key.toString() + ": " + data[key].toString() + ", ";
+				}
+
+				console.log(message);
 			}
 		</script>
 	</head>
