@@ -9,9 +9,6 @@
 
 			function onLoad(){
 
-				// TODO: Find the destination of console messages in Qt Creator
-				console.log("console.log: hello world");
-
 				removeMessageOfUnavailabilityOfJavaScript();
 
 				if(isD3Available()){
@@ -32,6 +29,19 @@
 
 					console.warn("d3.js is not available. Execution was canceled.");
 				}
+
+				if(window["gate"] != undefined){
+					gate.transferredData.connect(receiveData);
+				}
+				else{
+
+					console.warn("'gate' is not present");
+				}
+			}
+
+			function receiveData(data){
+
+				console.log("received: " + data.toString());
 			}
 		</script>
 	</head>

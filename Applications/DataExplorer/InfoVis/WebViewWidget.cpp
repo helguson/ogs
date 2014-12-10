@@ -22,12 +22,13 @@ WebViewWidget::WebViewWidget(QWidget* parent)
 {
 	setupUi(this);
 	
-	// replace QWebPage element in order to forward JavaScript console messages
-	QWebPage* javaScriptMessageForwardingQWebPage = new JavaScriptMessageForwardingQWebPage(this->webView);
-	this->webView->setPage(javaScriptMessageForwardingQWebPage);
+	this->gate = new JavaScriptGate(this);
+	this->transferCount = 0;
+	this->prepareJavaScriptMessageForwarding();
 
-	QWebFrame *frame = this->webView->page()->mainFrame();
-	connect(frame, SIGNAL(javaScriptWindowObjectCleared()), this, SLOT(addToJavascript()));
+	this->setUpAutomaticObjectPublishing();
+	
+	connect(this->pushButton, SIGNAL(clicked()), this, SLOT(initiateDataTransfer()));
 }
 
 
@@ -39,4 +40,25 @@ void WebViewWidget::addToJavascript()
 {
 	QWebFrame *frame = this->webView->page()->mainFrame();
 	frame->addToJavaScriptWindowObject("qtPushButton", this->pushButton);
+	frame->addToJavaScriptWindowObject("gate", this->gate);
+}
+
+void WebViewWidget::initiateDataTransfer(){
+	
+	this->gate->transferData(this->transferCount);
+	this->transferCount++;
+}
+
+
+/// replace QWebPage element in order to forward JavaScript console messages
+void WebViewWidget::prepareJavaScriptMessageForwarding(){
+	
+	QWebPage* javaScriptMessageForwardingQWebPage = new JavaScriptMessageForwardingQWebPage(this->webView);
+	this->webView->setPage(javaScriptMessageForwardingQWebPage);
+}
+
+void WebViewWidget::setUpAutomaticObjectPublishing(){
+	
+	QWebFrame *frame = this->webView->page()->mainFrame();
+	connect(frame, SIGNAL(javaScriptWindowObjectCleared()), this, SLOT(addToJavascript()));
 }

@@ -1,6 +1,6 @@
 /**
  * \file
- * \author Lars Bilke
+ * \author Lars Bilke, Thomas Hennig
  * \date   2014-11-03
  * \brief  Definition of the WebViewDialog class.
  *
@@ -16,6 +16,7 @@
 #define WEBVIEWDIALOG_H
 
 #include "ui_WebViewWidget.h"
+#include "JavaScriptGate.h"
 
 
 /**
@@ -36,6 +37,14 @@ public slots:
 	//void loadUrl(QString url);
 
 	void addToJavascript();
+	void initiateDataTransfer();
+	
+private:
+	JavaScriptGate* gate;
+	int transferCount;
+	
+	void prepareJavaScriptMessageForwarding();
+	void setUpAutomaticObjectPublishing();
 };
 
 #endif //WEBVIEWDIALOG_H

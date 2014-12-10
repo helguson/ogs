@@ -2,12 +2,14 @@
 set( SOURCES
 	WebViewWidget.cpp
 	JavaScriptMessageForwardingQWebPage.cpp
+	JavaScriptGate.cpp
 )
 
 # Moc headers
 set( MOC_HEADERS
 	WebViewWidget.h
 	JavaScriptMessageForwardingQWebPage.h
+	JavaScriptGate.h
 )
 
 # Header files
