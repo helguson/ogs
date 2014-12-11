@@ -16,7 +16,6 @@
 #include "JavaScriptMessageForwardingQWebPage.h"
 
 #include <QWebFrame>
-#include <QVariant>
 #include <iostream>
 
 WebViewWidget::WebViewWidget(QWidget* parent)
@@ -49,34 +48,85 @@ void WebViewWidget::addToJavascript()
 void WebViewWidget::initiateDataTransfer(){
 	
 	// generate test data
-	QString testHeader = QString("name,colour,age");
-	QString testData =  QString("Tina,green,22");
+	QString testHeader = QString("name,colour,age,size");
+	QString testData1 =  QString("Tina,green,22,xl");
+	QString testData2 =  QString("Bernd,red,34,m");
 	QRegExp delimiter = QRegExp(",");
 	
-	QVariantMap map = QVariantMap();
-	
 	QStringList headerList = testHeader.split(delimiter);
-	QStringList dataList = testData.split(delimiter);
 	
-	if(headerList.length() == dataList.length()){
-		
-		for(int i = 0; i < headerList.length(); i++){
-			
-			QString key = QString(headerList.at(i));
-			QVariant value = QVariant(dataList.at(i));
-			
-			//map.insert(headerList.at(i),QVariant(dataList.at(i)));
-			map.insert(key,value);
-		}
-	}
-	else{
-		// TODO: either warn or handle it
-		std::cout << "element count of header and data is not equal" << std::endl;
-	}
+	QVariantMap map1 = processLine(headerList, testData1, delimiter);
+	QVariantMap map2 = processLine(headerList, testData2, delimiter);
 	
-	this->gate->transferData(map);
+	QVariantMap list = QVariantMap();
+	list.insert("0", QVariant(map1));
+	list.insert("1", QVariant(map2));
+	
+	this->gate->transferData(list);
 }
 
+
+// assert |headerElements| == |dataElements|
+// assert for every i in [0...|headerElements|-1]: header[i] isHeaderFor(lineData[i])
+QVariantMap WebViewWidget::processLine(QStringList const header, QString const lineData, QRegExp const delimiter){
+	
+	QVariantMap resultMap = QVariantMap();
+	
+	// 1.
+	QStringList structuredLineData = structure(lineData, delimiter);
+	
+	// 2.
+	for(int index = 0; index < structuredLineData.length(); index++){
+		
+		QString stringDataElement = structuredLineData.at(index);
+		QString headerElement = header.at(index);
+		QVariant dataElement;
+		
+		// 2.1.
+		if(!isErroneous(stringDataElement, index)){
+			
+			// 2.1.a
+			dataElement = assignType(stringDataElement, index);
+		}
+		else{
+			// 2.1.b
+			dataElement = handleErroneous(stringDataElement, index);
+		}
+		
+		// 2.2
+		resultMap.insert(headerElement, dataElement);
+	}
+	
+	return resultMap;
+}
+
+QStringList WebViewWidget::structure(QString const lineData, QRegExp const delimiter){
+	
+	return lineData.split(delimiter);
+}
+
+bool WebViewWidget::isErroneous(QString const dataElement, int index){
+	
+	return hasValidStructure(dataElement, index);
+}
+
+// TODO: implement by testing against given regular expression for structure
+bool WebViewWidget::hasValidStructure(QString const dataElement, int index){
+	
+	return true;
+}
+
+// TODO: implement by assigning type
+QVariant WebViewWidget::assignType(QString const dataElement, int index){
+	
+	return QVariant(dataElement);
+}
+
+// TODO: implement
+QVariant WebViewWidget::handleErroneous(QString const dataElement, int index){
+	
+	return QVariant(dataElement);
+}
 
 /// replace QWebPage element in order to forward JavaScript console messages
 void WebViewWidget::prepareJavaScriptMessageForwarding(){

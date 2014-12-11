@@ -18,6 +18,10 @@
 #include "ui_WebViewWidget.h"
 #include "JavaScriptGate.h"
 
+#include <QVariant>
+#include <QString>
+#include <QRegExp>
+
 
 /**
  * \brief A dialog for specifying the parameters to construct a mesh based on a raster
@@ -45,6 +49,15 @@ private:
 	
 	void prepareJavaScriptMessageForwarding();
 	void setUpAutomaticObjectPublishing();
+	
+	static QVariantMap processLine(QStringList const header, QString const lineData, QRegExp const delimiter);
+	static QStringList structure(QString const lineData, QRegExp const delimiter);
+	static bool isErroneous(QString const dataElement, int index);
+	static bool hasValidStructure(QString const dataElement, int index);
+	static QVariant assignType(QString const dataElement, int index);
+	static QVariant handleErroneous(QString const dataElement, int index);
 };
+
+
 
 #endif //WEBVIEWDIALOG_H

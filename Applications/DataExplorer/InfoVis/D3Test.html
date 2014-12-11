@@ -39,21 +39,34 @@
 				}
 			}
 
+			var lastReceivedData = {};
+
 			function receiveData(data){
 
-				console.log("received " + data.toString());
+				console.log("received: " + JSONToString(data));
+				console.log("element '0' of received: " + JSONToString(data["0"]));
+
+				lastReceivedData = data;
+			}
+
+			function onClick(){
+
+				console.log("lastReceivedData: " + JSONToString(lastReceivedData));
+			}
+
+			function JSONToString(jsonObject){
 
 				var message = "";
 
-				for(key in data){
-					message += key.toString() + ": " + data[key].toString() + ", ";
+				for(key in jsonObject){
+					message += key.toString() + ": " + jsonObject[key].toString() + ", ";
 				}
 
-				console.log(message);
+				return message;
 			}
 		</script>
 	</head>
-	<body onload="onLoad()">
+	<body onload="onLoad()" onclick="onClick()">
 		<div id="viz">
 				<p id="javaScriptNotExecutedDummy">JavaScript was not executed</p>
 		</div>
