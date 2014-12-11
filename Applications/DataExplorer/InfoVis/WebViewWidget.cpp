@@ -31,6 +31,7 @@ WebViewWidget::WebViewWidget(QWidget* parent)
 	this->setUpAutomaticObjectPublishing();
 	
 	connect(this->pushButton, SIGNAL(clicked()), this, SLOT(initiateDataTransfer()));
+	connect(this->reloadButton, SIGNAL(clicked()), this->webView, SLOT(reload()));
 }
 
 
