@@ -22,6 +22,8 @@
 #include <QString>
 #include <QRegExp>
 
+#include <QTextStream>
+
 
 /**
  * \brief A dialog for specifying the parameters to construct a mesh based on a raster
@@ -50,12 +52,17 @@ private:
 	void prepareJavaScriptMessageForwarding();
 	void setUpAutomaticObjectPublishing();
 	
-	static QVariantMap processLine(QStringList const header, QString const lineData, QRegExp const delimiter);
-	static QStringList structure(QString const lineData, QRegExp const delimiter);
-	static bool isErroneous(QString const dataElement, int index);
-	static bool hasValidStructure(QString const dataElement, int index);
-	static QVariant assignType(QString const dataElement, int index);
-	static QVariant handleErroneous(QString const dataElement, int index);
+	static QVariantMap processFile(QString const & path, QRegExp const & delimiter, QRegExp const & attributeStructure);
+	static QVariantMap processFileData(QTextStream  & filestream, QRegExp const & delimiter, QRegExp const & attributeStructure);
+	static QStringList processMetaData(QTextStream & filestream, QRegExp const & delimiter, QRegExp const & attributeStructure);
+	static QVariantMap processData(QTextStream & filestream, QStringList const & header, QRegExp const & delimiter, QRegExp const & attributeStructure);
+	
+	static QVariantMap processLine(QString const & lineData, QStringList const & header, QRegExp const & delimiter, QRegExp const & attributeStructure);
+	static QStringList structure(QString const & lineData, QRegExp const & delimiter);
+	static bool isErroneous(QString const & dataElement, int index, QRegExp const & attributeStructure);
+	static bool hasValidStructure(QString const & dataElement, int index, QRegExp const & attributeStructure);
+	static QVariant assignType(QString const & dataElement, int index, QRegExp const & attributeStructure);
+	static QVariant handleErroneous(QString const & dataElement, int index);
 };
 
 

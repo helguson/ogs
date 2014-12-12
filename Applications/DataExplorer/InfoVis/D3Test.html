@@ -43,23 +43,32 @@
 
 			function receiveData(data){
 
-				console.log("received: " + JSONToString(data));
-				console.log("element '0' of received: " + JSONToString(data["0"]));
+				console.log("element '0' of received data: " + JSONToString(data["0"]));
 
 				lastReceivedData = data;
 			}
 
 			function onClick(){
 
-				console.log("lastReceivedData: " + JSONToString(lastReceivedData));
+				console.log("element '0' of lastReceivedData: " + JSONToString(lastReceivedData["0"]));
 			}
 
 			function JSONToString(jsonObject){
 
 				var message = "";
+				var isFirstElement = true;
 
 				for(key in jsonObject){
-					message += key.toString() + ": " + jsonObject[key].toString() + ", ";
+
+					if(isFirstElement){
+
+						isFirstElement = false;
+					}
+					else{
+
+						message += ", ";
+					}
+					message += key.toString() + ":" + jsonObject[key].toString();
 				}
 
 				return message;
