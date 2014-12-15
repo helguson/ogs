@@ -53,9 +53,9 @@ void WebViewWidget::initiateDataTransfer(){
 		QString relativeFilePath = "../../data/DB/";
 		QString fileName = "Cosmic-Ray-Station Seelhausener See _Cosmic Ray Station 2_.csv";
 		QRegExp delimiter(",");
-		QRegExp attributeStructure("\"([^\"]*)\"");
+		QVariantList attributeStructures = DSVFormatReader::getValidStructures();
 		
-		QVariantMap data = DSVFormatReader::processFile(relativeFilePath + fileName, delimiter, attributeStructure);
+		QVariantMap data = DSVFormatReader::processFile(relativeFilePath + fileName, delimiter, attributeStructures);
 		
 		this->gate->transferData(data);
 	}

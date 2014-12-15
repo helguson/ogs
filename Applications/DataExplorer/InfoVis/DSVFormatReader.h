@@ -10,21 +10,32 @@
 
 /**
  * @brief class to read files in delimiter-seperated-values format
+ * @author Thomas Hennig
  */
 class DSVFormatReader
 {
 public:
-	DSVFormatReader(QRegExp const & delimiter, QRegExp const & attributeStructure);
+	DSVFormatReader(QRegExp const & delimiter, QVariantList const & attributeStructures);
 	DSVFormatReader();
 	~DSVFormatReader();
 	
 	QVariantMap processFile(QString const & path);
-	static QVariantMap processFile(QString const & path, QRegExp const & delimiter, QRegExp const & attributeStructure);
+	
+	static QVariantMap processFile(QString const & path, QRegExp const & delimiter, QVariantList const & attributeStructures);
+	static QVariantList getTypes();
+	static QVariantList getValidStructures();
+	
+	static const QString TEXT;
+	static const QString NUMBER;
+	static const QString TIME;
 private:
 	// meta data
-	QRegExp attributeStructure;
+	QVariantList attributeStructures;
 	QRegExp delimiter;
-	QStringList header;
+	QRegExp headerElementStructure;
+	QStringList names;
+	QVariantList types;
+	QVariantList units;
 	
 	// data
 	
@@ -32,13 +43,16 @@ private:
 	QVariantMap processFileData(QTextStream  & filestream);
 	void processMetaData(QTextStream & filestream);
 	QVariantMap processData(QTextStream & filestream);
-	QVariantMap processLine(QString const & lineData);
-	QStringList structure(QString const & lineData);
-	bool isErroneous(QString const & dataElement, int index);
+	QVariantMap processDataRow(QString const & dataRow);
+	QStringList structure(QString const & dataRow);
+	bool confirmsValidityOf(QString const & dataElement, int index);
 	bool hasValidStructure(QString const & dataElement, int index);
-	QVariant assignType(QString const & dataElement, int index);
+	QVariant assignTypeTo(QString const & dataElement, int index);
 	QVariant handleErroneous(QString const & dataElement, int index);
 	
+	static QVariant parseNumber(QString const & dataElement, QRegExp const & structure);
+	static QVariant parseText(QString const & dataElement, QRegExp const & structure);
+	static QVariant parseTime(QString const & dataElement, QRegExp const & structure);
 };
 
 #endif // DSVFORMATREADER_H
