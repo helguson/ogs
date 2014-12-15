@@ -3,6 +3,7 @@ set( SOURCES
 	WebViewWidget.cpp
 	JavaScriptMessageForwardingQWebPage.cpp
 	JavaScriptGate.cpp
+	DSVFormatReader.cpp
 )
 
 # Moc headers
@@ -14,6 +15,7 @@ set( MOC_HEADERS
 
 # Header files
 set( HEADERS
+	DSVFormatReader.h
 )
 
 # UI files
