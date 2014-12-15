@@ -3,14 +3,28 @@
 #include <iostream>
 #include <QFile>
 
-DSVFormatReader::DSVFormatReader(){
-}
+//######################################
+//### constructors and deconstructor ###
+//######################################
+DSVFormatReader::DSVFormatReader(QRegExp const & delimiter, QRegExp const & attributeStructure)
+:
+	attributeStructure(attributeStructure),
+	delimiter(delimiter),
+	header()
+{}
+
+DSVFormatReader::DSVFormatReader()
+	:DSVFormatReader(QRegExp(","), QRegExp("\"*\""))
+{}
 
 DSVFormatReader::~DSVFormatReader(){
 }
 
+//###############
+//### methods ###
+//###############
 // assert delimiter-seperated-values-format
-QVariantMap DSVFormatReader::processFile(QString const & path, QRegExp const & delimiter, QRegExp const & attributeStructure){
+QVariantMap DSVFormatReader::processFile(QString const & path){
 	
 	QFile file(path);
 	
@@ -27,34 +41,33 @@ QVariantMap DSVFormatReader::processFile(QString const & path, QRegExp const & d
 	}
 	
 	QTextStream filestream(&file);
-	QVariantMap processedData = processFileData(filestream, delimiter, attributeStructure);
+	QVariantMap processedData = this->processFileData(filestream);
 	
 	file.close();
 	
 	return processedData;
 }
 
-QVariantMap DSVFormatReader::processFileData(QTextStream & filestream, QRegExp const & delimiter, QRegExp const & attributeStructure){
+QVariantMap DSVFormatReader::processFileData(QTextStream & filestream){
 	
-	QStringList header = processMetaData(filestream, delimiter, attributeStructure);
+	this->processMetaData(filestream);
 	
-	return processData(filestream, header, delimiter, attributeStructure);
+	return this->processData(filestream);
 }
 
 // assert use before 'processData', due to structure of dsv-format (header data in first line), so that filestream contains no meta data but data afterwards
-QStringList DSVFormatReader::processMetaData(QTextStream & filestream, QRegExp const & delimiter, QRegExp const & attributeStructure){
+void DSVFormatReader::processMetaData(QTextStream & filestream){
 	
 	QString headerLine = filestream.readLine();
-	QStringList header = headerLine
-			     .split(delimiter)
-			     .replaceInStrings(attributeStructure, "\\1");	// TODO: Where should that step be put and how should it be named? data extraction?
-	
-	return header;
+	this->header = headerLine
+			     .split(this->delimiter)
+			     .replaceInStrings(this->attributeStructure, "\\1");	// TODO: Where should that step be put and how should it be named? data extraction?
 }
 
 // assert filestream contains no meta data but data
 // in order to transfer file data at once to JavaScript it will be stored recordwise in a QVariantMap with String indices
-QVariantMap DSVFormatReader::processData(QTextStream & filestream, QStringList const & header, QRegExp const & delimiter, QRegExp const & attributeStructure){
+// TODO: find meaningful names for the different kinds of data (record, dataElement, ...) or define them
+QVariantMap DSVFormatReader::processData(QTextStream & filestream){
 	
 	QVariantMap resultData = QVariantMap();
 	int nextIndex = 0;
@@ -62,7 +75,7 @@ QVariantMap DSVFormatReader::processData(QTextStream & filestream, QStringList c
 	while(!filestream.atEnd()){
 		
 		QString stringRecord = filestream.readLine();
-		QVariantMap record = processLine(stringRecord, header, delimiter, attributeStructure);
+		QVariantMap record = this->processLine(stringRecord);
 		
 		resultData.insert(
 			QString::number(nextIndex),
@@ -77,25 +90,26 @@ QVariantMap DSVFormatReader::processData(QTextStream & filestream, QStringList c
 
 // assert |headerElements| == |dataElements|
 // assert for every i in [0...|headerElements|-1]: header[i] isHeaderFor(lineData[i])
-QVariantMap DSVFormatReader::processLine(QString const & lineData, QStringList const & header, QRegExp const & delimiter, QRegExp const & attributeStructure){
+// TODO: divide data and meta data
+QVariantMap DSVFormatReader::processLine(QString const & lineData){
 	
 	QVariantMap resultMap = QVariantMap();
 	
 	// 1.
-	QStringList structuredLineData = structure(lineData, delimiter);
+	QStringList structuredLineData = this->structure(lineData);
 	
 	// 2.
 	for(int index = 0; index < structuredLineData.length(); index++){
 		
 		QString stringDataElement = structuredLineData.at(index);
-		QString headerElement = header.at(index);
+		QString headerElement = this->header.at(index);
 		QVariant dataElement;
 		
 		// 2.1.
-		if(!isErroneous(stringDataElement, index, attributeStructure)){
+		if(!this->isErroneous(stringDataElement, index)){
 			
 			// 2.1.a
-			dataElement = assignType(stringDataElement, index, attributeStructure);
+			dataElement = this->assignType(stringDataElement, index);
 		}
 		else{
 			// 2.1.b
@@ -109,33 +123,44 @@ QVariantMap DSVFormatReader::processLine(QString const & lineData, QStringList c
 	return resultMap;
 }
 
-QStringList DSVFormatReader::structure(QString const & lineData, QRegExp const & delimiter){
+QStringList DSVFormatReader::structure(QString const & lineData){
 	
-	return lineData.split(delimiter);
+	return lineData.split(this->delimiter);
 }
 
-bool DSVFormatReader::isErroneous(QString const & dataElement, int index, QRegExp const & attributeStructure){
+bool DSVFormatReader::isErroneous(QString const & dataElement, int index){
 	
-	return !hasValidStructure(dataElement, index, attributeStructure);
+	return !this->hasValidStructure(dataElement, index);
 }
 
 // TODO: implement by testing against given regular expression for structure
-bool DSVFormatReader::hasValidStructure(QString const & dataElement, int index, QRegExp const & attributeStructure){
+// assert there is only one valid regular expression
+bool DSVFormatReader::hasValidStructure(QString const & dataElement, int index){
 	
-	return attributeStructure.exactMatch(dataElement);
+	return this->attributeStructure.exactMatch(dataElement);
 }
 
 // TODO: implement by assigning type (parse int, datetime, ...)
-QVariant DSVFormatReader::assignType(QString const & dataElement, int index, QRegExp const & attributeStructure){
+QVariant DSVFormatReader::assignType(QString const & dataElement, int index){
 	
 	// TODO: make more obvious
 	// initialize captured texts
-	attributeStructure.exactMatch(dataElement);
-	return QVariant(attributeStructure.cap(1));
+	this->attributeStructure.exactMatch(dataElement);
+	return QVariant(this->attributeStructure.cap(1));
 }
 
 // TODO: implement
 QVariant DSVFormatReader::handleErroneous(QString const & dataElement, int index){
 	
 	return QVariant(QString("ERRONEOUS:") + dataElement);
+}
+
+//########################
+//### static functions ###
+//########################
+QVariantMap DSVFormatReader::processFile(QString const & path, QRegExp const & delimiter, QRegExp const & attributeStructure){
+	
+	DSVFormatReader reader(delimiter, attributeStructure);
+	
+	return reader.processFile(path);
 }

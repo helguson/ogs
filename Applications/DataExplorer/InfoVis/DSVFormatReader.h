@@ -14,20 +14,31 @@
 class DSVFormatReader
 {
 public:
+	DSVFormatReader(QRegExp const & delimiter, QRegExp const & attributeStructure);
 	DSVFormatReader();
 	~DSVFormatReader();
 	
+	QVariantMap processFile(QString const & path);
 	static QVariantMap processFile(QString const & path, QRegExp const & delimiter, QRegExp const & attributeStructure);
 private:
-	static QVariantMap processFileData(QTextStream  & filestream, QRegExp const & delimiter, QRegExp const & attributeStructure);
-	static QStringList processMetaData(QTextStream & filestream, QRegExp const & delimiter, QRegExp const & attributeStructure);
-	static QVariantMap processData(QTextStream & filestream, QStringList const & header, QRegExp const & delimiter, QRegExp const & attributeStructure);
-	static QVariantMap processLine(QString const & lineData, QStringList const & header, QRegExp const & delimiter, QRegExp const & attributeStructure);
-	static QStringList structure(QString const & lineData, QRegExp const & delimiter);
-	static bool isErroneous(QString const & dataElement, int index, QRegExp const & attributeStructure);
-	static bool hasValidStructure(QString const & dataElement, int index, QRegExp const & attributeStructure);
-	static QVariant assignType(QString const & dataElement, int index, QRegExp const & attributeStructure);
-	static QVariant handleErroneous(QString const & dataElement, int index);
+	// meta data
+	QRegExp attributeStructure;
+	QRegExp delimiter;
+	QStringList header;
+	
+	// data
+	
+	
+	QVariantMap processFileData(QTextStream  & filestream);
+	void processMetaData(QTextStream & filestream);
+	QVariantMap processData(QTextStream & filestream);
+	QVariantMap processLine(QString const & lineData);
+	QStringList structure(QString const & lineData);
+	bool isErroneous(QString const & dataElement, int index);
+	bool hasValidStructure(QString const & dataElement, int index);
+	QVariant assignType(QString const & dataElement, int index);
+	QVariant handleErroneous(QString const & dataElement, int index);
+	
 };
 
 #endif // DSVFORMATREADER_H
