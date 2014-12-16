@@ -16,6 +16,7 @@ const QString DSVFormatReader::TIME = QString("TIME");
 //######################################
 //### constructors and deconstructor ###
 //######################################
+// TODO: clean parameters
 DSVFormatReader::DSVFormatReader(QRegExp const & delimiter, QVariantList const & attributeStructures)
 :
 	attributeStructures(attributeStructures),
@@ -65,31 +66,32 @@ QVariantMap DSVFormatReader::processFile(QString const & path){
 
 QVariantMap DSVFormatReader::processFileData(QTextStream & filestream){
 	
-	this->processMetaData(filestream);
+	this->processHead(filestream);
 	
-	return this->processData(filestream);
+	return this->processBody(filestream);
 }
 
-// assert use before 'processData', due to structure of dsv-format (header data in first line), so that filestream contains no meta data but data afterwards
-void DSVFormatReader::processMetaData(QTextStream & filestream){
+// assert use before 'processBody', due to structure of dsv-format (header data in first line), so that filestream contains no meta data but data afterwards
+void DSVFormatReader::processHead(QTextStream & filestream){
 	
 	// clear previous meta data
 	this->names.clear();
 	this->units.clear();
 	
-	QString headerLine = filestream.readLine();
-	QStringList headerElements = headerLine.split(this->delimiter);
+	QString headRow = filestream.readLine();
+	QStringList headElements = headRow.split(this->delimiter);
 	
-	for(QString headerElement: headerElements){
+	for(QString headElement: headElements){
+		
+		// TODO: extract to 'extractMetaData'
 		
 		QString name("");
 		QString unit("");
 		
 		// exactMatch is nessesary in order to initialize 'cap()'
-		if(this->headerElementStructure.exactMatch(headerElement)){
+		if(this->headerElementStructure.exactMatch(headElement)){
 			
 			// TODO: make dynamic
-			// TODO: Where should that step be put and how should it be named? data extraction?
 			name = this->headerElementStructure.cap(1);
 			unit = this->headerElementStructure.cap(2);
 		}
@@ -103,100 +105,100 @@ void DSVFormatReader::processMetaData(QTextStream & filestream){
 
 // assert filestream contains no meta data but data
 // in order to transfer file data at once to JavaScript it will be stored recordwise in a QVariantMap with String indices
-// TODO: find meaningful names for the different kinds of data (record, dataElement, ...) or define them
-QVariantMap DSVFormatReader::processData(QTextStream & filestream){
+QVariantMap DSVFormatReader::processBody(QTextStream & filestream){
 	
-	QVariantMap resultData = QVariantMap();
+	QVariantMap data = QVariantMap();
 	int nextIndex = 0;
 	
 	while(!filestream.atEnd()){
 		
-		QString dataLine = filestream.readLine();
-		QVariantMap dataSet = this->processDataRow(dataLine);
+		QString bodyRow = filestream.readLine();
+		QVariantMap dataRow = this->processBodyRow(bodyRow);
 		
-		resultData.insert(
+		data.insert(
 			QString::number(nextIndex),
-			QVariant(dataSet)
+			QVariant(dataRow)
 		);
 		
 		nextIndex++;
 	}
 	
-	return resultData;
+	return data;
 }
 
-// assert |headerElements| == |dataElements/perRow|
-// assert for every i in [0...|headerElements|-1]: header[i] isHeaderFor(lineData[i])
-// TODO: divide data and meta data
-QVariantMap DSVFormatReader::processDataRow(QString const & dataRow){
+// assert |headElements| == |bodyElements/perRow|
+// TODO: separate data and meta data
+QVariantMap DSVFormatReader::processBodyRow(QString const & bodyRow){
 	
-	QVariantMap resultMap = QVariantMap();
+	QVariantMap dataRow = QVariantMap();
 	
 	// 1.
-	QStringList dataRowElements = this->structure(dataRow);
+	QStringList bodyRowElements = this->structure(bodyRow);
 	
 	// 2.
-	for(int index = 0; index < dataRowElements.length(); index++){
+	for(int index = 0; index < bodyRowElements.length(); index++){
 		
-		QString dataElement = dataRowElements.at(index);
+		QString bodyElement = bodyRowElements.at(index);
 		QString name = this->names.at(index);
-		QVariant date;
+		QVariant dataElement;
 		
 		// 2.1.
-		if(this->confirmsValidityOf(dataElement, index)){
+		if(this->confirmsValidityOf(bodyElement, index)){
 			
 			// 2.1.a
-			date = this->assignTypeTo(dataElement, index);
+			dataElement = this->assignTypeTo(bodyElement, index);
 		}
 		else{
 			// 2.1.b
-			date = handleErroneous(dataElement, index);
+			dataElement = handleErroneous(bodyElement, index);
 		}
 		
 		// 2.2
-		resultMap.insert(name, date);
+		dataRow.insert(name, dataElement);
 	}
 	
-	return resultMap;
+	return dataRow;
 }
 
-QStringList DSVFormatReader::structure(QString const & dataRow){
+QStringList DSVFormatReader::structure(QString const & bodyRow){
 	
-	return dataRow.split(this->delimiter);
+	return bodyRow.split(this->delimiter);
 }
 
-bool DSVFormatReader::confirmsValidityOf(QString const & dataElement, int index){
+bool DSVFormatReader::confirmsValidityOf(QString const & bodyElement, int columnIndex){
 	
-	return this->hasValidStructure(dataElement, index);
+	return this->hasValidStructure(bodyElement, columnIndex);
 }
 
 // test against given regular expression for structure
 // assert there is only one valid regular expression
-bool DSVFormatReader::hasValidStructure(QString const & dataElement, int index){
+bool DSVFormatReader::hasValidStructure(QString const & bodyElement, int columnIndex){
 	
-	return this->attributeStructures.at(index).toRegExp().exactMatch(dataElement);
+	return this->attributeStructures.at(columnIndex).toRegExp().exactMatch(bodyElement);
 }
 
-QVariant DSVFormatReader::assignTypeTo(QString const & dataElement, int index){
+QVariant DSVFormatReader::assignTypeTo(QString const & bodyElement, int columnIndex){
 	
-	QVariant result = QVariant();
+	QVariant dataElement = QVariant();
 	
-	QString type  = this->types.at(index).toString();
-	QRegExp structure = this->attributeStructures.at(index).toRegExp();
+	QString type  = this->types.at(columnIndex).toString();
+	QRegExp structure = this->attributeStructures.at(columnIndex).toRegExp();
 	
+	
+	// TODO: think about type handling object
 	if(type.compare(NUMBER) == 0){
 		
-		result = parseNumber(dataElement, structure);
+		dataElement = parseNumber(bodyElement, structure);
 	}
 	else{
 		if(type.compare(TEXT) == 0){
 			
-			result = parseText(dataElement, structure);
+			dataElement = parseText(bodyElement, structure);
 		}
 		else{
 			if(type.compare(TIME) == 0){
 				
-				result = parseTime(dataElement, structure);
+				dataElement = parseTime(bodyElement, structure);
 			}
 			else{
 				// TODO: throw error, ... and handle it somewhere
@@ -204,13 +206,13 @@ QVariant DSVFormatReader::assignTypeTo(QString const & dataElement, int index){
 		}
 	}
 	
-	return result;
+	return dataElement;
 }
 
-// TODO: implement
-QVariant DSVFormatReader::handleErroneous(QString const & dataElement, int index){
+// TODO: implement handling
+QVariant DSVFormatReader::handleErroneous(QString const & bodyElement, int index){
 	
-	return QVariant(QString("ERRONEOUS:") + dataElement);
+	return QVariant(QString("ERRONEOUS:") + bodyElement);
 }
 
 //########################
@@ -223,25 +225,25 @@ QVariantMap DSVFormatReader::processFile(QString const & path, QRegExp const & d
 	return reader.processFile(path);
 }
 
-QVariant DSVFormatReader::parseNumber(QString const & dataElement, QRegExp const & structure){
+QVariant DSVFormatReader::parseNumber(QString const & bodyElement, QRegExp const & structure){
 	
-	structure.exactMatch(dataElement);
+	structure.exactMatch(bodyElement);
 	
 	// TODO: make dynamic
 	return QVariant(structure.cap(1).toDouble());
 }
 
-QVariant DSVFormatReader::parseText(QString const & dataElement, QRegExp const & structure){
+QVariant DSVFormatReader::parseText(QString const & bodyElement, QRegExp const & structure){
 	
-	structure.exactMatch(dataElement);
+	structure.exactMatch(bodyElement);
 	
 	// TODO: make dynamic
 	return QVariant(structure.cap(1));
 }
 
-QVariant DSVFormatReader::parseTime(QString const & dataElement, QRegExp const & structure){
+QVariant DSVFormatReader::parseTime(QString const & bodyElement, QRegExp const & structure){
 	
-	structure.exactMatch(dataElement);
+	structure.exactMatch(bodyElement);
 	
 	// TODO: make dynamic
 	QDate date(
