@@ -24,6 +24,9 @@
 
 #include <QTextStream>
 
+#include <memory>
+#include <vector>
+
 
 /**
  * \brief A dialog for specifying the parameters to construct a mesh based on a raster
@@ -46,8 +49,7 @@ public slots:
 	void initiateDataTransfer();
 	
 private:
-	JavaScriptGate* gate;
-	int transferCount;
+	JavaScriptGate*	gate;
 	
 	void prepareJavaScriptMessageForwarding();
 	void setUpAutomaticObjectPublishing();

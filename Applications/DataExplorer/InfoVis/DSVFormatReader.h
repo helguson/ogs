@@ -7,6 +7,10 @@
 #include <QRegExp>
 
 #include <QTextStream>
+#include <memory>
+
+#include "MetaData.h"
+#include "Data.h"
 
 /**
  * @brief class to read files in delimiter-seperated-values format
@@ -58,7 +62,6 @@
  * - each bodyElement represents exactly one date
  */
 
-// TODO: rename structure elements in order to follow the nomenclature
 // TODO: mark elements of the nomenclature that actually appear in the code
 // TODO: remove the 'Note ...' paragraph if it is no longer necessary
 class DSVFormatReader
@@ -68,9 +71,10 @@ public:
 	DSVFormatReader();
 	~DSVFormatReader();
 	
-	QVariantMap processFile(QString const & path);
+	void processFile(QString const & path);
+	std::unique_ptr<Data> getData();
+	std::unique_ptr<MetaData> getMetaData();
 	
-	static QVariantMap processFile(QString const & path, QRegExp const & delimiter, QVariantList const & attributeStructures);
 	static QVariantList getTypes();
 	static QVariantList getValidStructures();
 	
@@ -89,18 +93,20 @@ private:
 	QVariantList units;
 	
 	// data
-	// TODO: add a data attribute
-	// TODO: add access functions for data and metaData
+	QVariantList data;
 	
-	QVariantMap processFileData(QTextStream  & filestream);
+	// TODO: const correctness
+	
+	void setUpProcessing();
+	void processFileData(QTextStream  & filestream);
 	void processHead(QTextStream & filestream);
-	QVariantMap processBody(QTextStream & filestream);
-	QVariantMap processBodyRow(QString const & bodyRow);
+	void processBody(QTextStream & filestream);
+	QVariantList processBodyRow(QString const & bodyRow);
 	QStringList structure(QString const & bodyRow);
 	bool confirmsValidityOf(QString const & bodyElement, int columnIndex);
 	bool hasValidStructure(QString const & bodyElement, int columnIndex);
 	QVariant assignTypeTo(QString const & bodyElement, int columnIndex);
-	QVariant handleErroneous(QString const & bodyElement, int columnIndex);
+	QVariant handleInvalid(QString const & bodyElement, int columnIndex);
 	
 	static QVariant parseNumber(QString const & bodyElement, QRegExp const & structure);
 	static QVariant parseText(QString const & bodyElement, QRegExp const & structure);

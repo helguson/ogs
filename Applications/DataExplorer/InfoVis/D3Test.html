@@ -31,7 +31,7 @@
 				}
 
 				if(window["gate"] != undefined){
-					gate.transferredData.connect(receiveData);
+					gate.announcedData.connect(onAnnouncedData);
 				}
 				else{
 
@@ -39,28 +39,41 @@
 				}
 			}
 
-			var lastReceivedData = {};
+			var lastReceivedData = [];
+			var lastReceivedMetaData = [];
 
-			function receiveData(data){
+			function onAnnouncedData(metaDataName, dataName){
 
-				console.log("element '0' of received data: " + JSONToString(data["0"]));
+				console.log("announced: " + metaDataName + ", " + dataName);
 
-				console.log((data["0"]["LEVEL0RECORD"])*2.5);
+				var metaData = window[metaDataName];
+				var data = window[dataName];
+
+				console.log(metaData);
+				console.log(data);
+
+				console.log("starting test");
+				console.log(metaData.getForDataColumnScope(2, "name"));
+				console.log(data.m_data)
+				console.log("passed test");
+/*
+				console.log("element '0' of received data: " + printDataRow(metaData, data[0]));
 
 				lastReceivedData = data;
-			}
+				lastReceivedMetaData = metaData;
+*/			}
 
 			function onClick(){
 
-				console.log("element '0' of lastReceivedData: " + JSONToString(lastReceivedData["0"]));
+				console.log("element '0' of lastReceivedData: " + printDataRow(lastReceivedMetaData ,lastReceivedData[0]));
 			}
 
-			function JSONToString(jsonObject){
+			function printDataRow(metaData, dataRow){
 
 				var message = "";
 				var isFirstElement = true;
 
-				for(key in jsonObject){
+				for(var columnIndex = 0; columnIndex < dataRow.length; columnIndex++){
 
 					if(isFirstElement){
 
@@ -70,7 +83,7 @@
 
 						message += ", ";
 					}
-					message += key.toString() + ":" + jsonObject[key].toString();
+					message += metaData.getForDataColumnScope(columnIndex, "name").toString() + ":" + dataRow[columnIndex].toString();
 				}
 
 				return message;

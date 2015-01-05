@@ -19,14 +19,15 @@
 #include <iostream>
 
 #include "DSVFormatReader.h"
+#include "MetaData.h"
 
 WebViewWidget::WebViewWidget(QWidget* parent)
-: QWidget(parent)
+:
+	QWidget(parent)
 {
 	setupUi(this);
 	
 	this->gate = new JavaScriptGate(this);
-	this->transferCount = 0;
 	this->prepareJavaScriptMessageForwarding();
 
 	this->setUpAutomaticObjectPublishing();
@@ -44,7 +45,8 @@ void WebViewWidget::addToJavascript()
 {
 	QWebFrame *frame = this->webView->page()->mainFrame();
 	frame->addToJavaScriptWindowObject("qtPushButton", this->pushButton);
-	frame->addToJavaScriptWindowObject("gate", this->gate);
+	
+	this->gate->announceAllTo(frame);
 }
 
 void WebViewWidget::initiateDataTransfer(){
@@ -55,9 +57,14 @@ void WebViewWidget::initiateDataTransfer(){
 		QRegExp delimiter(",");
 		QVariantList attributeStructures = DSVFormatReader::getValidStructures();
 		
-		QVariantMap data = DSVFormatReader::processFile(relativeFilePath + fileName, delimiter, attributeStructures);
+		DSVFormatReader reader(delimiter, attributeStructures);
+		reader.processFile(relativeFilePath + fileName);
 		
-		this->gate->transferData(data);
+		this->gate->storeAndAnnounce(
+			reader.getMetaData(),
+			reader.getData(),
+			this->webView->page()->mainFrame()
+		);
 	}
 	catch(int i){
 		// TODO: implement

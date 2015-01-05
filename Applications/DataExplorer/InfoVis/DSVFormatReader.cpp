@@ -24,7 +24,8 @@ DSVFormatReader::DSVFormatReader(QRegExp const & delimiter, QVariantList const &
 	headerElementStructure(QRegExp("\"(\\S*)( \\(([\\S ]+)\\))?\"")),
 	names(),
 	types(getTypes()),
-	units()
+	units(),
+	data()
 {}
 
 DSVFormatReader::DSVFormatReader()
@@ -38,7 +39,9 @@ DSVFormatReader::~DSVFormatReader(){
 //### methods ###
 //###############
 // assert delimiter-seperated-values-format
-QVariantMap DSVFormatReader::processFile(QString const & path){
+void DSVFormatReader::processFile(QString const & path){
+	
+	this->setUpProcessing();
 	
 	QFile file(path);
 	
@@ -57,26 +60,31 @@ QVariantMap DSVFormatReader::processFile(QString const & path){
 	}
 	
 	QTextStream filestream(&file);
-	QVariantMap processedData = this->processFileData(filestream);
+	
+	this->processFileData(filestream);
 	
 	file.close();
-	
-	return processedData;
 }
 
-QVariantMap DSVFormatReader::processFileData(QTextStream & filestream){
+void DSVFormatReader::setUpProcessing(){
+	
+	// clear previous extracted meta data
+	this->names.clear();
+	this->units.clear();
+	
+	// clear previous extracted data
+	this->data.clear();
+}
+
+void DSVFormatReader::processFileData(QTextStream & filestream){
 	
 	this->processHead(filestream);
 	
-	return this->processBody(filestream);
+	this->processBody(filestream);
 }
 
 // assert use before 'processBody', due to structure of dsv-format (header data in first line), so that filestream contains no meta data but data afterwards
 void DSVFormatReader::processHead(QTextStream & filestream){
-	
-	// clear previous meta data
-	this->names.clear();
-	this->units.clear();
 	
 	QString headRow = filestream.readLine();
 	QStringList headElements = headRow.split(this->delimiter);
@@ -105,56 +113,44 @@ void DSVFormatReader::processHead(QTextStream & filestream){
 
 // assert filestream contains no meta data but data
 // in order to transfer file data at once to JavaScript it will be stored recordwise in a QVariantMap with String indices
-QVariantMap DSVFormatReader::processBody(QTextStream & filestream){
-	
-	QVariantMap data = QVariantMap();
-	int nextIndex = 0;
+void DSVFormatReader::processBody(QTextStream & filestream){
 	
 	while(!filestream.atEnd()){
 		
 		QString bodyRow = filestream.readLine();
-		QVariantMap dataRow = this->processBodyRow(bodyRow);
+		QVariantList dataRow = this->processBodyRow(bodyRow);
 		
-		data.insert(
-			QString::number(nextIndex),
-			QVariant(dataRow)
-		);
-		
-		nextIndex++;
+		this->data.append(QVariant(dataRow));
 	}
-	
-	return data;
 }
 
-// assert |headElements| == |bodyElements/perRow|
-// TODO: separate data and meta data
-QVariantMap DSVFormatReader::processBodyRow(QString const & bodyRow){
+// assert |headElements| == |bodyElements/Row|
+QVariantList DSVFormatReader::processBodyRow(QString const & bodyRow){
 	
-	QVariantMap dataRow = QVariantMap();
+	QVariantList dataRow = QVariantList();
 	
 	// 1.
 	QStringList bodyRowElements = this->structure(bodyRow);
 	
 	// 2.
-	for(int index = 0; index < bodyRowElements.length(); index++){
+	for(int columnIndex = 0; columnIndex < bodyRowElements.length(); columnIndex++){
 		
-		QString bodyElement = bodyRowElements.at(index);
-		QString name = this->names.at(index);
+		QString bodyElement = bodyRowElements.at(columnIndex);
 		QVariant dataElement;
 		
 		// 2.1.
-		if(this->confirmsValidityOf(bodyElement, index)){
+		if(this->confirmsValidityOf(bodyElement, columnIndex)){
 			
 			// 2.1.a
-			dataElement = this->assignTypeTo(bodyElement, index);
+			dataElement = this->assignTypeTo(bodyElement, columnIndex);
 		}
 		else{
 			// 2.1.b
-			dataElement = handleErroneous(bodyElement, index);
+			dataElement = handleInvalid(bodyElement, columnIndex);
 		}
 		
 		// 2.2
-		dataRow.insert(name, dataElement);
+		dataRow.append(dataElement);
 	}
 	
 	return dataRow;
@@ -209,22 +205,40 @@ QVariant DSVFormatReader::assignTypeTo(QString const & bodyElement, int columnIn
 	return dataElement;
 }
 
-// TODO: implement handling
-QVariant DSVFormatReader::handleErroneous(QString const & bodyElement, int index){
+QVariant DSVFormatReader::handleInvalid(QString const & bodyElement, int columnIndex){
 	
-	return QVariant(QString("ERRONEOUS:") + bodyElement);
+	// returns 'undefined' in JavaScript
+	return QVariant();
+}
+
+std::unique_ptr<Data> DSVFormatReader::getData(){
+	
+	std::unique_ptr<Data> result(new Data(this->data));
+	
+	return std::move(result);
+}
+
+// TODO: add additional meta data
+// returns nothing but identifiers so far
+std::unique_ptr<MetaData> DSVFormatReader::getMetaData(){
+	
+	std::unique_ptr<MetaData> result(new MetaData());
+	
+	for(int columnIndex = 0; columnIndex < this->names.length(); columnIndex++){
+		
+		result->setForDataColumnScope(
+			columnIndex,
+			QString("name"),
+			QVariant(this->names.at(columnIndex))
+		);
+	}
+	
+	return std::move(result);
 }
 
 //########################
 //### static functions ###
 //########################
-QVariantMap DSVFormatReader::processFile(QString const & path, QRegExp const & delimiter, QVariantList const & attributeStructures){
-	
-	DSVFormatReader reader(delimiter, attributeStructures);
-	
-	return reader.processFile(path);
-}
-
 QVariant DSVFormatReader::parseNumber(QString const & bodyElement, QRegExp const & structure){
 	
 	structure.exactMatch(bodyElement);
