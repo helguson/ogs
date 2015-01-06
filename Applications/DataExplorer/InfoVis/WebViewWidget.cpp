@@ -13,10 +13,8 @@
  */
 
 #include "WebViewWidget.h"
-#include "JavaScriptMessageForwardingQWebPage.h"
 
 #include <QWebFrame>
-#include <iostream>
 
 #include "DSVFormatReader.h"
 
@@ -27,12 +25,11 @@ WebViewWidget::WebViewWidget(QWidget* parent)
 	setupUi(this);
 	
 	this->gate = new JavaScriptGate(this);
-	this->prepareJavaScriptMessageForwarding();
 
-	this->setUpAutomaticObjectPublishing();
+	this->setUpSignalSlotConnections();
+	this->enableDebugging();
 	
-	connect(this->pushButton, SIGNAL(clicked()), this, SLOT(initiateDataTransfer()));
-	connect(this->reloadButton, SIGNAL(clicked()), this->webView, SLOT(reload()));
+	this->loadTestData();
 }
 
 
@@ -40,7 +37,23 @@ WebViewWidget::~WebViewWidget()
 {
 }
 
-void WebViewWidget::addToJavascript()
+void WebViewWidget::enableDebugging(){
+	
+	// Question: is there a non global approach?
+	QWebSettings::globalSettings()->setAttribute(QWebSettings::DeveloperExtrasEnabled, true);
+}
+
+void WebViewWidget::setUpSignalSlotConnections(){
+	
+	// automatic object announcement on JS start
+	QWebFrame *frame = this->webView->page()->mainFrame();
+	connect(frame, SIGNAL(javaScriptWindowObjectCleared()), this, SLOT(announceToJavascript()));
+	
+	connect(this->pushButton, SIGNAL(clicked()), this, SLOT(initiateDataTransfer()));
+	connect(this->reloadButton, SIGNAL(clicked()), this->webView, SLOT(reload()));
+}
+
+void WebViewWidget::announceToJavascript()
 {
 	QWebFrame *frame = this->webView->page()->mainFrame();
 	frame->addToJavaScriptWindowObject("qtPushButton", this->pushButton);
@@ -50,6 +63,11 @@ void WebViewWidget::addToJavascript()
 
 void WebViewWidget::initiateDataTransfer(){
 	
+	this->gate->transferEveryStored();
+
+}
+
+void WebViewWidget::loadTestData(){
 	try{
 		QString relativeFilePath = "../../data/DB/";
 		QString fileName = "Cosmic-Ray-Station Seelhausener See _Cosmic Ray Station 2_.csv";
@@ -59,7 +77,7 @@ void WebViewWidget::initiateDataTransfer(){
 		DSVFormatReader reader(delimiter, attributeStructures);
 		reader.processFile(relativeFilePath + fileName);
 		
-		this->gate->storeAndTransfer(
+		this->gate->store(
 			reader.getValues(),
 			reader.getMetaDataRelation()
 		);
@@ -67,17 +85,4 @@ void WebViewWidget::initiateDataTransfer(){
 	catch(int i){
 		// TODO: implement
 	}
-}
-
-/// replace QWebPage element in order to forward JavaScript console messages
-void WebViewWidget::prepareJavaScriptMessageForwarding(){
-	
-	QWebPage* javaScriptMessageForwardingQWebPage = new JavaScriptMessageForwardingQWebPage(this->webView);
-	this->webView->setPage(javaScriptMessageForwardingQWebPage);
-}
-
-void WebViewWidget::setUpAutomaticObjectPublishing(){
-	
-	QWebFrame *frame = this->webView->page()->mainFrame();
-	connect(frame, SIGNAL(javaScriptWindowObjectCleared()), this, SLOT(addToJavascript()));
 }

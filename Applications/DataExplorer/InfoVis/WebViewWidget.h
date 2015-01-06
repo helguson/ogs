@@ -29,7 +29,8 @@
 
 
 /**
- * \brief A dialog for specifying the parameters to construct a mesh based on a raster
+ * \brief a test environement for transferring data to JavaScript in order to
+ * render it with d3.js
  */
 class WebViewWidget : public QWidget, public Ui_WebViewWidget
 {
@@ -42,17 +43,15 @@ public:
 	~WebViewWidget(void);
 
 public slots:
-	/// Load the given url
-	//void loadUrl(QString url);
-
-	void addToJavascript();
+	void announceToJavascript();
 	void initiateDataTransfer();
 	
 private:
 	JavaScriptGate*	gate;
-	
-	void prepareJavaScriptMessageForwarding();
-	void setUpAutomaticObjectPublishing();
+
+	void setUpSignalSlotConnections();
+	void enableDebugging();
+	void loadTestData();
 };
 
 

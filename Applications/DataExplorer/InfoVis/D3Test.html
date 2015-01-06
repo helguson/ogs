@@ -42,28 +42,18 @@
 				}
 			}
 
-			var lastReceivedData = [];
-			var lastReceivedMetaData = [];
-
 			function onTransferredData(values, metaDataRelation){
 
 				// test: access values
-				var message = "";
-				for(var i = 0; i < 50; i++){
-
-					message = message + values[i].toString() + ",";
-				}
-				console.log(message);
+				console.log(values);
+				console.log(metaDataRelation);
 
 				// test: access value and its meta data
-				console.log("started test");
 
-				var counter = 0;
 				var meta = function(baseIndex){
-					counter++;
 					var result = values[baseIndex].toString();
 
-					if(metaDataRelation[baseIndex].length > 0 && counter < 50){
+					if(metaDataRelation[baseIndex].length > 0){
 
 						result += "(";
 
@@ -82,16 +72,11 @@
 				}
 
 				console.log("[500]: " + meta(500));
-				console.log("finished test");
-/*
-
-				lastReceivedData = data;
-				lastReceivedMetaData = metaData;
-*/			}
+			}
 
 			function onClick(){
 
-				console.log("element '0' of lastReceivedData: " + printDataRow(lastReceivedMetaData ,lastReceivedData[0]));
+				console.log("onclick dummy");
 			}
 
 		</script>

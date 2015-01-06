@@ -1,7 +1,6 @@
 # Source files
 set( SOURCES
 	WebViewWidget.cpp
-	JavaScriptMessageForwardingQWebPage.cpp
 	JavaScriptGate.cpp
 	DSVFormatReader.cpp
 	Data.cpp
@@ -10,7 +9,6 @@ set( SOURCES
 # Moc headers
 set( MOC_HEADERS
 	WebViewWidget.h
-	JavaScriptMessageForwardingQWebPage.h
 	JavaScriptGate.h
 )
 
