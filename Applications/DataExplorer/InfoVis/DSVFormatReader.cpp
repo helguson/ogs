@@ -25,7 +25,7 @@ DSVFormatReader::DSVFormatReader(QRegExp const & delimiter, QVariantList const &
 	names(),
 	types(getTypes()),
 	units(),
-	data()
+	dataBuilder()
 {}
 
 DSVFormatReader::DSVFormatReader()
@@ -73,7 +73,7 @@ void DSVFormatReader::setUpProcessing(){
 	this->units.clear();
 	
 	// clear previous extracted data
-	this->data.clear();
+	this->dataBuilder.reset();
 }
 
 void DSVFormatReader::processFileData(QTextStream & filestream){
@@ -81,6 +81,36 @@ void DSVFormatReader::processFileData(QTextStream & filestream){
 	this->processHead(filestream);
 	
 	this->processBody(filestream);
+}
+
+void DSVFormatReader::processName(QString name){
+	
+	int dateID = this->dataBuilder.addDateAndReturnIndex(
+		QVariant(name)
+	);
+	this->names.push_back(dateID);
+	
+	// TODO: extract to remove redundancy
+	int identifierID = this->dataBuilder.addDateAndReturnIndex(
+		QVariant(QString("name"))
+	);
+	
+	this->dataBuilder.addAsMetaDataFor(dateID, identifierID);
+}
+
+void DSVFormatReader::processUnit(QString unit){
+	
+	int dateID = this->dataBuilder.addDateAndReturnIndex(
+		QVariant(unit)
+	);
+	this->units.push_back(dateID);
+	
+	// TODO: extract to remove redundancy
+	int identifierID = this->dataBuilder.addDateAndReturnIndex(
+		QVariant(QString("unit"))
+	);
+	
+	this->dataBuilder.addAsMetaDataFor(dateID, identifierID);
 }
 
 // assert use before 'processBody', due to structure of dsv-format (header data in first line), so that filestream contains no meta data but data afterwards
@@ -101,11 +131,11 @@ void DSVFormatReader::processHead(QTextStream & filestream){
 			
 			// TODO: make dynamic
 			name = this->headerElementStructure.cap(1);
-			unit = this->headerElementStructure.cap(2);
+			unit = this->headerElementStructure.cap(3);
 		}
 		
-		this->names.append(name);
-		this->units.append(QVariant(unit));
+		this->processName(name);
+		this->processUnit(unit);
 	}
 	
 		
@@ -118,16 +148,12 @@ void DSVFormatReader::processBody(QTextStream & filestream){
 	while(!filestream.atEnd()){
 		
 		QString bodyRow = filestream.readLine();
-		QVariantList dataRow = this->processBodyRow(bodyRow);
-		
-		this->data.append(QVariant(dataRow));
+		this->processBodyRow(bodyRow);
 	}
 }
 
 // assert |headElements| == |bodyElements/Row|
-QVariantList DSVFormatReader::processBodyRow(QString const & bodyRow){
-	
-	QVariantList dataRow = QVariantList();
+void DSVFormatReader::processBodyRow(QString const & bodyRow){
 	
 	// 1.
 	QStringList bodyRowElements = this->structure(bodyRow);
@@ -149,11 +175,11 @@ QVariantList DSVFormatReader::processBodyRow(QString const & bodyRow){
 			dataElement = handleInvalid(bodyElement, columnIndex);
 		}
 		
-		// 2.2
-		dataRow.append(dataElement);
+		// 2.2 store date and assign meta data
+		int dateIndex = this->dataBuilder.addDateAndReturnIndex(dataElement);
+		this->dataBuilder.addAsMetaDataFor(dateIndex, this->names[columnIndex]);
+		this->dataBuilder.addAsMetaDataFor(dateIndex, this->units[columnIndex]);
 	}
-	
-	return dataRow;
 }
 
 QStringList DSVFormatReader::structure(QString const & bodyRow){
@@ -211,29 +237,14 @@ QVariant DSVFormatReader::handleInvalid(QString const & bodyElement, int columnI
 	return QVariant();
 }
 
-std::unique_ptr<Data> DSVFormatReader::getData(){
+std::unique_ptr<QVariantList> DSVFormatReader::getValues(){
 	
-	std::unique_ptr<Data> result(new Data(this->data));
-	
-	return std::move(result);
+	return this->dataBuilder.getValues();
 }
 
-// TODO: add additional meta data
-// returns nothing but identifiers so far
-std::unique_ptr<MetaData> DSVFormatReader::getMetaData(){
+std::unique_ptr<QVariantList> DSVFormatReader::getMetaDataRelation(){
 	
-	std::unique_ptr<MetaData> result(new MetaData());
-	
-	for(int columnIndex = 0; columnIndex < this->names.length(); columnIndex++){
-		
-		result->setForDataColumnScope(
-			columnIndex,
-			QString("name"),
-			QVariant(this->names.at(columnIndex))
-		);
-	}
-	
-	return std::move(result);
+	return this->dataBuilder.getMetaDataRelation();
 }
 
 //########################

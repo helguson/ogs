@@ -9,7 +9,6 @@
 #include <QTextStream>
 #include <memory>
 
-#include "MetaData.h"
 #include "Data.h"
 
 /**
@@ -72,8 +71,8 @@ public:
 	~DSVFormatReader();
 	
 	void processFile(QString const & path);
-	std::unique_ptr<Data> getData();
-	std::unique_ptr<MetaData> getMetaData();
+	std::unique_ptr<QVariantList> getValues();
+	std::unique_ptr<QVariantList> getMetaDataRelation();
 	
 	static QVariantList getTypes();
 	static QVariantList getValidStructures();
@@ -82,26 +81,27 @@ public:
 	static const QString NUMBER;
 	static const QString TIME;
 private:
-	// meta data
-	// TODO: accumulate into a metaData attribute
+	// tmp meta data
 	// TODO: think about its structure (QVariantMap? / getSetOfMetaDataFor<Row/Column/Element/all>()?)
 	QVariantList attributeStructures;
 	QRegExp delimiter;
 	QRegExp headerElementStructure;	//TODO: meta meta data?
-	QStringList names;
+	QList<int> names;
 	QVariantList types;
-	QVariantList units;
+	QList<int> units;
 	
 	// data
-	QVariantList data;
+	DataBuilder dataBuilder;
 	
 	// TODO: const correctness
 	
 	void setUpProcessing();
 	void processFileData(QTextStream  & filestream);
 	void processHead(QTextStream & filestream);
+	void processName(QString name);
+	void processUnit(QString unit);
 	void processBody(QTextStream & filestream);
-	QVariantList processBodyRow(QString const & bodyRow);
+	void processBodyRow(QString const & bodyRow);
 	QStringList structure(QString const & bodyRow);
 	bool confirmsValidityOf(QString const & bodyElement, int columnIndex);
 	bool hasValidStructure(QString const & bodyElement, int columnIndex);

@@ -7,6 +7,8 @@
 		<script type="text/javascript" src="./infovis.js"></script>
 		<script type="text/javascript">
 
+			var GATE_ANNOUNCEMENT_NAME = "gate";
+
 			function onLoad(){
 
 				removeMessageOfUnavailabilityOfJavaScript();
@@ -30,8 +32,9 @@
 					console.warn("d3.js is not available. Execution was canceled.");
 				}
 
-				if(window["gate"] != undefined){
-					gate.announcedData.connect(onAnnouncedData);
+				if(window[GATE_ANNOUNCEMENT_NAME] != undefined){
+
+					window[GATE_ANNOUNCEMENT_NAME].transferredData.connect(onTransferredData);
 				}
 				else{
 
@@ -42,22 +45,45 @@
 			var lastReceivedData = [];
 			var lastReceivedMetaData = [];
 
-			function onAnnouncedData(metaDataName, dataName){
+			function onTransferredData(values, metaDataRelation){
 
-				console.log("announced: " + metaDataName + ", " + dataName);
+				// test: access values
+				var message = "";
+				for(var i = 0; i < 50; i++){
 
-				var metaData = window[metaDataName];
-				var data = window[dataName];
+					message = message + values[i].toString() + ",";
+				}
+				console.log(message);
 
-				console.log(metaData);
-				console.log(data);
+				// test: access value and its meta data
+				console.log("started test");
 
-				console.log("starting test");
-				console.log(metaData.getForDataColumnScope(2, "name"));
-				console.log(data.m_data)
-				console.log("passed test");
+				var counter = 0;
+				var meta = function(baseIndex){
+					counter++;
+					var result = values[baseIndex].toString();
+
+					if(metaDataRelation[baseIndex].length > 0 && counter < 50){
+
+						result += "(";
+
+						for(var i = 0; i < metaDataRelation[baseIndex].length; i++){
+							if(i != 0){
+								result += ", ";
+							}
+							result += meta(metaDataRelation[baseIndex][i]);
+						}
+
+						result += ")";
+					}
+
+
+					return result;
+				}
+
+				console.log("[500]: " + meta(500));
+				console.log("finished test");
 /*
-				console.log("element '0' of received data: " + printDataRow(metaData, data[0]));
 
 				lastReceivedData = data;
 				lastReceivedMetaData = metaData;
@@ -68,26 +94,6 @@
 				console.log("element '0' of lastReceivedData: " + printDataRow(lastReceivedMetaData ,lastReceivedData[0]));
 			}
 
-			function printDataRow(metaData, dataRow){
-
-				var message = "";
-				var isFirstElement = true;
-
-				for(var columnIndex = 0; columnIndex < dataRow.length; columnIndex++){
-
-					if(isFirstElement){
-
-						isFirstElement = false;
-					}
-					else{
-
-						message += ", ";
-					}
-					message += metaData.getForDataColumnScope(columnIndex, "name").toString() + ":" + dataRow[columnIndex].toString();
-				}
-
-				return message;
-			}
 		</script>
 	</head>
 	<body onload="onLoad()" onclick="onClick()">

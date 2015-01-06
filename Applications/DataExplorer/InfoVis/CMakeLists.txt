@@ -4,7 +4,6 @@ set( SOURCES
 	JavaScriptMessageForwardingQWebPage.cpp
 	JavaScriptGate.cpp
 	DSVFormatReader.cpp
-	MetaData.cpp
 	Data.cpp
 )
 
@@ -13,13 +12,12 @@ set( MOC_HEADERS
 	WebViewWidget.h
 	JavaScriptMessageForwardingQWebPage.h
 	JavaScriptGate.h
-	MetaData.h
-	Data.h
 )
 
 # Header files
 set( HEADERS
 	DSVFormatReader.h
+	Data.h
 )
 
 # UI files

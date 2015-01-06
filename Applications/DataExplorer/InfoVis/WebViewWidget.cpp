@@ -19,7 +19,6 @@
 #include <iostream>
 
 #include "DSVFormatReader.h"
-#include "MetaData.h"
 
 WebViewWidget::WebViewWidget(QWidget* parent)
 :
@@ -46,7 +45,7 @@ void WebViewWidget::addToJavascript()
 	QWebFrame *frame = this->webView->page()->mainFrame();
 	frame->addToJavaScriptWindowObject("qtPushButton", this->pushButton);
 	
-	this->gate->announceAllTo(frame);
+	this->gate->announceYourselfTo(frame);
 }
 
 void WebViewWidget::initiateDataTransfer(){
@@ -60,10 +59,9 @@ void WebViewWidget::initiateDataTransfer(){
 		DSVFormatReader reader(delimiter, attributeStructures);
 		reader.processFile(relativeFilePath + fileName);
 		
-		this->gate->storeAndAnnounce(
-			reader.getMetaData(),
-			reader.getData(),
-			this->webView->page()->mainFrame()
+		this->gate->storeAndTransfer(
+			reader.getValues(),
+			reader.getMetaDataRelation()
 		);
 	}
 	catch(int i){
