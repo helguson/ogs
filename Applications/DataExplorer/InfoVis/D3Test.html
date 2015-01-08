@@ -42,36 +42,22 @@
 				}
 			}
 
-			function onTransferredData(values, metaDataRelation){
+			function onTransferredData(values, metaDataRelation, baseDataIndices){
 
-				// test: access values
 				console.log(values);
 				console.log(metaDataRelation);
+				console.log(baseDataIndices);
 
-				// test: access value and its meta data
+				window.factory = new infovis.DataAccessorFactory(values, metaDataRelation);
+				console.log(factory);
+				window.baseDataIndices = baseDataIndices;
+				window.testAccessor = factory.getAccessorFor(baseDataIndices[0]);
+				console.log(testAccessor);
 
-				var meta = function(baseIndex){
-					var result = values[baseIndex].toString();
-
-					if(metaDataRelation[baseIndex].length > 0){
-
-						result += "(";
-
-						for(var i = 0; i < metaDataRelation[baseIndex].length; i++){
-							if(i != 0){
-								result += ", ";
-							}
-							result += meta(metaDataRelation[baseIndex][i]);
-						}
-
-						result += ")";
-					}
-
-
-					return result;
-				}
-
-				console.log("[500]: " + meta(500));
+				console.log(testAccessor.access());
+				console.log(testAccessor.access("Logger"));
+				console.log(testAccessor.meta());
+				console.log(testAccessor.meta("name").access());
 			}
 
 			function onClick(){

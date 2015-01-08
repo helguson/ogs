@@ -13,7 +13,6 @@
 #include <QWebFrame>
 
 #include <memory>
-#include <utility>
 
 /**
  * @brief class that announces data to a specified JavaScript engine
@@ -24,21 +23,22 @@ class JavaScriptGate : public QObject
 public:
 	explicit JavaScriptGate(QObject *parent = 0);
 	
-	void store(std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation);
-	void storeAndTransfer(std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation);
+	void store(std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation, std::unique_ptr<QVariantList> baseDataIndices);
+	void storeAndTransfer(std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation, std::unique_ptr<QVariantList> baseDataIndices);
 	void transferEveryStored();
 	void announceYourselfTo(QWebFrame * frame);
 	
 	static const QString GATE_ANNOUNCEMENT_NAME;
 signals:
-	void transferredData(QVariantList values, QVariantList metaDataRelation);
+	void transferredData(QVariantList values, QVariantList metaDataRelation, QVariantList baseDataIndices);
 	
 private:
 	void transferStored(int index);
 	
-	typedef std::pair<std::unique_ptr<QVariantList>, std::unique_ptr<QVariantList>> DataPair;
+	std::vector<std::unique_ptr<QVariantList>> valuesStorage;
+	std::vector<std::unique_ptr<QVariantList>> metaDataRelationStorage;
+	std::vector<std::unique_ptr<QVariantList>> baseDataIndicesStorage;
 	
-	std::vector<DataPair>	storage;
 };
 
 #endif // JAVASCRIPTGATE_H

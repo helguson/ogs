@@ -79,7 +79,8 @@ void WebViewWidget::loadTestData(){
 		
 		this->gate->store(
 			reader.getValues(),
-			reader.getMetaDataRelation()
+			reader.getMetaDataRelation(),
+			reader.getBaseDataIndices()
 		);
 	}
 	catch(int i){

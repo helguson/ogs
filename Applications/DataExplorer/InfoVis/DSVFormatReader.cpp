@@ -74,6 +74,7 @@ void DSVFormatReader::setUpProcessing(){
 	
 	// clear previous extracted data
 	this->dataBuilder.reset();
+	this->baseDataIndices.clear();
 }
 
 void DSVFormatReader::processFileData(QTextStream & filestream){
@@ -155,6 +156,9 @@ void DSVFormatReader::processBody(QTextStream & filestream){
 // assert |headElements| == |bodyElements/Row|
 void DSVFormatReader::processBodyRow(QString const & bodyRow){
 	
+	// reserve space for new row
+	this->baseDataIndices.push_back(QList<int>());
+	
 	// 1.
 	QStringList bodyRowElements = this->structure(bodyRow);
 	
@@ -179,6 +183,8 @@ void DSVFormatReader::processBodyRow(QString const & bodyRow){
 		int dateIndex = this->dataBuilder.addDateAndReturnIndex(dataElement);
 		this->dataBuilder.addAsMetaDataFor(dateIndex, this->names[columnIndex]);
 		this->dataBuilder.addAsMetaDataFor(dateIndex, this->units[columnIndex]);
+		
+		this->baseDataIndices.last().push_back(dateIndex);
 	}
 }
 
@@ -245,6 +251,31 @@ std::unique_ptr<QVariantList> DSVFormatReader::getValues(){
 std::unique_ptr<QVariantList> DSVFormatReader::getMetaDataRelation(){
 	
 	return this->dataBuilder.getMetaDataRelation();
+}
+
+std::unique_ptr<QVariantList> DSVFormatReader::getBaseDataIndices(){
+	
+	std::unique_ptr<QVariantList> result(new QVariantList());
+	
+	for(int rowIndex = 0; rowIndex < this->baseDataIndices.length(); rowIndex++){
+		
+		QVariantList rowDataIndices;
+		
+		for(int columnIndex = 0; columnIndex < this->baseDataIndices[rowIndex].length(); columnIndex++){
+			
+			int indexOfCurrentDate = this->baseDataIndices[rowIndex][columnIndex];
+			
+			rowDataIndices.push_back(
+				QVariant(indexOfCurrentDate)
+			);
+		}
+		
+		(*result).push_back(
+			QVariant(rowDataIndices)
+		);
+	}
+	
+	return result;
 }
 
 //########################

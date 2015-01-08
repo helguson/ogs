@@ -11,35 +11,38 @@ const QString JavaScriptGate::GATE_ANNOUNCEMENT_NAME = QString("gate");
 JavaScriptGate::JavaScriptGate(QObject *parent)
 :
 	QObject(parent),
-	storage()
+	valuesStorage(),
+	metaDataRelationStorage(),
+	baseDataIndicesStorage()
 {
 }
 
 //###############
 //### methods ###
 //###############
-void JavaScriptGate::store(std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation){
+void JavaScriptGate::store(std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation, std::unique_ptr<QVariantList> baseDataIndices){
 	
-	this->storage.push_back(
-		DataPair()
-	);
-	
-	this->storage.back().first = std::move(values);
-	this->storage.back().second = std::move(metaDataRelation);
+	this->valuesStorage.push_back(std::move(values));
+	this->metaDataRelationStorage.push_back(std::move(metaDataRelation));
+	this->baseDataIndicesStorage.push_back(std::move(baseDataIndices));
 }
 
-void JavaScriptGate::storeAndTransfer(std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation){
+void JavaScriptGate::storeAndTransfer(std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation, std::unique_ptr<QVariantList> baseDataIndices){
 	
-	this->store(std::move(values), std::move(metaDataRelation));
+	this->store(
+		std::move(values),
+		std::move(metaDataRelation),
+		std::move(baseDataIndices)
+	);
 	
 	this->transferStored(
-		this->storage.size()-1	// last element
+		this->valuesStorage.size()-1	// last element
 	);
 }
 
 void JavaScriptGate::transferEveryStored(){
 	
-	for(uint index = 0; index < this->storage.size(); index++){
+	for(uint index = 0; index < this->valuesStorage.size(); index++){
 		
 		this->transferStored(index);
 	}
@@ -54,8 +57,10 @@ void JavaScriptGate::announceYourselfTo(QWebFrame* frame){
 }
 
 void JavaScriptGate::transferStored(int index){
-
-	DataPair & pair = this->storage[index];
 	
-	emit transferredData(*(pair.first), *(pair.second));
+	emit transferredData(
+		*(this->valuesStorage[index]),
+		*(this->metaDataRelationStorage[index]),
+		*(this->baseDataIndicesStorage[index])
+	);
 }

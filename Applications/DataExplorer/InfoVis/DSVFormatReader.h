@@ -73,6 +73,7 @@ public:
 	void processFile(QString const & path);
 	std::unique_ptr<QVariantList> getValues();
 	std::unique_ptr<QVariantList> getMetaDataRelation();
+	std::unique_ptr<QVariantList> getBaseDataIndices();
 	
 	static QVariantList getTypes();
 	static QVariantList getValidStructures();
@@ -92,6 +93,7 @@ private:
 	
 	// data
 	DataBuilder dataBuilder;
+	QList<QList<int>> baseDataIndices;
 	
 	// TODO: const correctness
 	
