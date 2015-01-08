@@ -17,7 +17,8 @@
 			}
 
 			window.MyArray = {};
-			window.MyArray.inject = function(value){
+			var MyArray = window.MyArray;
+			MyArray.inject = function(value){
 
 				//#######################
 				//### private methods ###
@@ -47,7 +48,26 @@
 
 				var injectPropertiesInto = function(object){
 
-					object.beep = "beep";
+					injectNonPrototypicPropertiesInto(object);
+					injectPrototypicPropertiesInto(object, MyArray.prototype);
+				};
+
+				var injectNonPrototypicPropertiesInto = function(object){
+
+					object.beep = "non prototypic beep";
+				};
+
+				var injectPrototypicPropertiesInto = function(object, prototype){
+
+					for(var key in prototype){
+						if(prototype.hasOwnProperty(key)){
+							Object.defineProperty(
+								object,
+								key,
+								{value: prototype[key]}
+							);
+						}
+					}
 				};
 
 				//#############
@@ -61,11 +81,11 @@
 
 				injectProperties();
 
-				//###########
-				//### end ###
-				//###########
 				return result;
 			}
+			MyArray.prototype = {};
+			MyArray.prototype.prototypicBeep = "prototypic beep";
+
 
 		</script>
 	</head>
