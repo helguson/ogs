@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8"></meta>
+		<title>extendArrayTest</title>
+		<script type="text/javascript">
+			"use strict";
+
+			function onLoad(){
+
+				//console.log("onload dummy");
+			}
+
+			function onClick(){
+
+				//console.log("onclick dummy");
+			}
+
+			window.MyArray = {};
+			window.MyArray.inject = function(value){
+
+				//#######################
+				//### private methods ###
+				//#######################
+				/**
+				 * @brief applies 'injectPropertiesInto' to 'result'
+				 * and to every array that is stored within 'result'
+				**/
+				var injectProperties = function(){
+
+					var injectables = [result];
+
+					while(injectables.length > 0){
+						// dequeue first element
+						var currentArray = injectables.shift();
+
+						var additionalInjectables = currentArray.filter(Array.isArray);
+
+						// enqueue additional elements
+						injectables = injectables.concat(
+							additionalInjectables
+						);
+
+						injectPropertiesInto(currentArray);
+					}
+				}
+
+				var injectPropertiesInto = function(object){
+
+					object.beep = "beep";
+				};
+
+				//#############
+				//### setUp ###
+				//#############
+				var result = [];
+
+				if(arguments.length > 0){
+					result = value;
+				}
+
+				injectProperties();
+
+				//###########
+				//### end ###
+				//###########
+				return result;
+			}
+
+		</script>
+	</head>
+	<body onload="onLoad()" onclick="onClick()">
+	</body>
+</html>
