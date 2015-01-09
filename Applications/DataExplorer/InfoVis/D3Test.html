@@ -51,13 +51,13 @@
 				window.factory = new infovis.DataAccessorFactory(values, metaDataRelation);
 				console.log(factory);
 				window.baseDataIndices = baseDataIndices;
-				window.testAccessor = factory.getAccessorFor(baseDataIndices[0]);
+				window.testAccessor = factory.makeAccessorFrom(baseDataIndices);
 				console.log(testAccessor);
 
-				console.log(testAccessor.access());
-				console.log(testAccessor.access("Logger"));
-				console.log(testAccessor.meta());
-				console.log(testAccessor.meta("name").access());
+				console.log(testAccessor[0].access());
+				console.log(testAccessor[0].access("Logger"));
+				console.log(testAccessor[0].meta().access());
+				console.log(testAccessor[0].meta("name").access());
 			}
 
 			function onClick(){

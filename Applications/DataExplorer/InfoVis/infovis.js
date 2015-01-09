@@ -79,123 +79,249 @@ infovis.DataAccessorFactory = function(values, metaDataRelation){
 	this.values = values;
 	this.metaDataRelation = metaDataRelation;
 
-	this.getAccessorFor = function(indexList){
+	this.makeAccessorFrom = function(indexList){
 
-		return new DataAccessor(indexList, this);
+		return infovis.DataAccessor.inject(indexList, this);
 	};
 }
 
-infovis.DataAccessor = function(indexList, dataStorage){
+/**
+ * a DataAccessor is an JavaScript array that stores indices (integers >= 0 or undefined) or other DataAccessors
+ * DataAccessor is refered as 'accessor' in the following
+**/
+infovis.DataAccessor = {};
+var DataAccessor = infovis.DataAccessor;
 
-	var DataAccessor = infovis.DataAccessor;
-
-	var indexList = indexList;
-	var dataStorage = dataStorage;
-	var thisAccessor = this;
+DataAccessor.inject = function(baseDataIndices, dataStorage){
 
 	//#######################
 	//### private methods ###
 	//#######################
-	var createNewDataAccessor = function(indexList){
+	/**
+	* @brief applies 'injectPropertiesInto' to 'result'
+	* and to every array that is stored within 'result'
+	**/
+	var injectProperties = function(base){
 
-		return new DataAccessor(
-			indexList,
-			dataStorage
-		);
+		var injectables = [base];
+
+		while(injectables.length > 0){
+			// dequeue first element
+			var currentArray = injectables.shift();
+
+			var additionalInjectables = currentArray.filter(Array.isArray);
+
+			// enqueue additional elements
+			injectables = injectables.concat(
+				additionalInjectables
+			);
+
+			injectPropertiesInto(currentArray);
+		}
 	}
 
-	var accessList = function(){
+	var injectPropertiesInto = function(object){
 
-		return indexList.map(
-			function(valueIndex){
+		injectNonPrototypicPropertiesInto(object);
+		injectPrototypicPropertiesInto(object, DataAccessor.prototype);
+	};
 
-				return dataStorage.values[valueIndex];
+	var injectNonPrototypicPropertiesInto = function(object){
+
+		object.dataStorage = dataStorage;
+	};
+
+	var injectPrototypicPropertiesInto = function(object, prototype){
+
+		for(var key in prototype){
+			if(prototype.hasOwnProperty(key)){
+				Object.defineProperty(
+					object,
+					key,
+					{value: prototype[key]}
+				);
+			}
+		}
+	};
+
+	//#############
+	//### setUp ###
+	//#############
+
+	injectProperties(baseDataIndices);
+
+	return baseDataIndices;
+}
+
+DataAccessor.prototype = {};
+
+DataAccessor.prototype.access = function(value){
+	//#######################
+	//### private methods ###
+	//#######################
+	// @param this - current accessor
+	var accessAll = function(){
+
+		var thisAccessor = this;
+
+		return this.map(
+			function(element){
+				// element is sub array
+				if(Array.isArray(element)){
+					return element.access();
+				}
+				// element is valueIndex
+				else{
+					return thisAccessor.dataStorage.values[element];
+				}
 			}
 		)
 	};
 
-	var accessElement = function(value){
+	// @param this - current accessor
+	var accessElements = function(value){
 		var result;
 
 		if(typeof(value) == "function"){
 
-			result = accessElementByPredicateFunction(value);
+			result = accessElementsByPredicateFunction.call(this, value);
 		}
 		else{
 
-			result = accessElementByMetaDate(value);
+			result = accessElementsByMetaDate.call(this, value);
 		}
 
 		return result;
 	};
 
-	var accessElementByMetaDate = function(metaDate){
+	// @param this - current accessor
+	var accessElementsByMetaDate = function(metaDate){
 
-		return accessElementByPredicateFunction(
+		return accessElementsByPredicateFunction.call(
+			this,
 			function(index, element){
 
 				var metaData = element.meta()[0].access();
 
+				// "return metaData.contains(metaDate);"
 				return metaData.indexOf(metaDate) != -1;
 			}
 		);
 	};
 
 	/**
-	 * @brief returns first value for that the predicate function returns true
+	 * @brief returns list of values which return true on application of predicate function
+	 * @param this - current accessor
 	 * @param predicateFunction(index, element)
 	 * 	this - current accessor
 	 * 	index - index of element within the current accessor
 	 * 	element - accessor for the current element
 	**/
-	var accessElementByPredicateFunction = function(predicateFunction){
+	var accessElementsByPredicateFunction = function(predicateFunction){
 
-		var result = undefined;
+		var result = [];
 
-		for(var indexListIndex = 0; indexListIndex < indexList.length; indexListIndex++){
+		for(var internalIndex = 0; internalIndex < this.length; internalIndex++){
 
-			var elementAccessor = createNewDataAccessor(
-				[indexList[indexListIndex]]
-			);
+			var internalElement = this[internalIndex];
 
-			var fulfiledPredicate = predicateFunction.call(
-				thisAccessor,
-				indexListIndex,
-				elementAccessor
-			);
+			if(Array.isArray(internalElement)){
 
-			if(fulfiledPredicate){
+				var values = internalElement.access(predicateFunction);
 
-				result = elementAccessor.access()[0];
-				break;
+				if(values.length > 0){
+					result.push(values);
+				}
 			}
+			else{
+
+				var elementAccessor = DataAccessor.inject(
+					[this[internalIndex]],
+					this.dataStorage
+				);
+
+				var fulfiledPredicate = predicateFunction.call(
+					this,
+					internalIndex,
+					elementAccessor
+				);
+
+				if(fulfiledPredicate){
+
+					var value = elementAccessor.access()[0];
+					result.push(value);
+				}
+			}
+
 		}
 
 		return result;
 	};
 
+
+
+	//############
+	//### main ###
+	//############
+	var result;
+
+	if(arguments.length == 0){
+		result = accessAll.call(this);
+	}
+	else{
+		result = accessElements.call(this, value);
+	}
+
+	return result;
+};
+
+DataAccessor.prototype.meta = function(value){
+	//#######################
+	//### private methods ###
+	//#######################
+	// @param this - current accessor
 	var metaLists = function(){
 
-		return indexList.map(
-			function(valueIndex){
+		var thisAccessor = this;
 
-				return createNewDataAccessor(
-					dataStorage.metaDataRelation[valueIndex]
-				);
+		var listOfMetaAccessors = thisAccessor.map(
+			function(element){
+
+				if(Array.isArray(element)){
+
+					return element.meta();
+				}
+				else{
+					// create copy instead of modifying stored data
+					var metaDataIndices = [].concat(
+						thisAccessor.dataStorage.metaDataRelation[element]
+					);
+
+					return DataAccessor.inject(
+						metaDataIndices,
+						thisAccessor.dataStorage
+					);
+				}
 			}
+		);
+
+		return DataAccessor.inject(
+			listOfMetaAccessors,
+			thisAccessor.dataStorage
 		);
 	};
 
+	// @param this - current accessor
 	var metaListBy = function(value){
 		var result;
 
 		if(typeof(value) == "function"){
 
-			result = metaListByPredicateFunction(value);
+			result = metaListByPredicateFunction.call(this, value);
 		}
 		else{
 
-			result = metaListByMetaDate(value);
+			result = metaListByMetaDate.call(this, value);
 		}
 
 		return result;
@@ -203,6 +329,7 @@ infovis.DataAccessor = function(indexList, dataStorage){
 
 
 	/**
+	 * @param this - current accessor
 	 * @param predicateFunction
 	 * 	this - current accessor
 	 * 	index - index within list of meta data for a date
@@ -210,82 +337,75 @@ infovis.DataAccessor = function(indexList, dataStorage){
 	**/
 	var metaListByPredicateFunction = function(predicateFunction){
 
-		var resultIndices = indexList.map(
-			function(valueIndex){
-				var result = -1;
+		var thisAccessor = this;
 
-				var metaDataIndices = dataStorage.metaDataRelation[valueIndex];
+		var resultIndices = thisAccessor.map(
+			function(element){
 
-				for(var index = 0; index < metaDataIndices.length; index++){
+				if(Array.isArray(element)){
 
-					var metaDate = createNewDataAccessor(
-						[metaDataIndices[index]]
-					);
-
-					var fulfiledPredicate = predicateFunction.call(
-						thisAccessor,
-						index,
-						metaDate
-					);
-
-					if(fulfiledPredicate){
-
-						result = metaDataIndices[index];
-						break;
-					}
+					return element.meta(predicateFunction);
 				}
+				else{
 
-				return result;
+					var result = undefined;
+
+					var metaDataIndices = thisAccessor.dataStorage.metaDataRelation[element];
+
+					for(var index = 0; index < metaDataIndices.length; index++){
+
+						var metaDate = DataAccessor.inject(
+							[metaDataIndices[index]],
+							thisAccessor.dataStorage
+						);
+
+						var fulfiledPredicate = predicateFunction.call(
+							thisAccessor,
+							index,
+							metaDate
+						);
+
+						if(fulfiledPredicate){
+
+							result = metaDataIndices[index];
+							break;
+						}
+					}
+
+					return result;
+				}
 			}
 		);
 
-		return createNewDataAccessor(
-			resultIndices
-		);
+		return DataAccessor.inject(resultIndices, thisAccessor.dataStorage);
 	};
 
+	// @param this - current accessor
 	var metaListByMetaDate = function(metaMetaDate){
 
-		return metaListByPredicateFunction(
+		return metaListByPredicateFunction.call(
+			this,
 			function(index, metaElement){
 
 				var metaMetaData = metaElement.meta()[0].access();
 
+				// "return metaMetaData.contains(metaMetaDate);"
 				return metaMetaData.indexOf(metaMetaDate) != -1;
 			}
 		);
 	};
 
-	//######################
-	//### public methods ###
-	//######################
-	this.access = function(value){
-		var result;
+	//############
+	//### main ###
+	//############
+	var result;
 
-		if(arguments.length == 0){
-			result = accessList();
-		}
-		else{
-			result = accessElement(value);
-		}
+	if(arguments.length == 0){
+		result = metaLists.call(this);
+	}
+	else{
+		result = metaListBy.call(this, value);
+	}
 
-		return result;
-	};
-
-	this.meta = function(value){
-		var result;
-
-		if(arguments.length == 0){
-			result = metaLists();
-		}
-		else{
-			result = metaListBy(value);
-		}
-
-		return result;
-	};
-
-	this.prepareJoin = function(){
-
-	};
+	return result;
 }
