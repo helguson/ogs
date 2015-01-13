@@ -6,7 +6,7 @@ window.infovis = {};
 // removes error message of unavailability of JavaScript in case of availability of JavaScript
 function removeMessageOfUnavailabilityOfJavaScript(){
 
-	document.getElementById("javaScriptNotExecutedDummy").remove();
+	document.getElementById("javaScriptNotAvailableDummy").remove();
 }
 
 // TODO: think about the robustnes of this method
@@ -17,61 +17,83 @@ function isD3Available(){
 	return window["d3"] != undefined;
 }
 
-// TODO: make more common
-// TODO: test
-// assertion: qtPushButton should have been passed from Qt side before execution of this code
-function isQtPresent(){
+// @param accessor - list of rows (lists)
+infovis.setUpTestDiagram = function(accessor){
 
-	return window["qtPushButton"] != undefined;
-}
+	var width = accessor.length*infovis.testWidthFactor;
+	var height = infovis.testHeight;
 
-function setUpSampleSVG(){
+	var svgSelection = d3.select("#viz").append("svg");
+	svgSelection
+		.attr("xmlns", "http://www.w3.org/2000/svg")
+		.attr("version", "1.1")
+		.attr("width", width)
+		.attr("height", height);
 
-	infovis.sampleSVG = d3.select("#viz")
-		.append("svg")
-		.attr("width", 100)
-		.attr("height", 100);
+	// test axes
+	//dim1 - time
+	//TimestampMeasurement
+	//dim2 - number
+	//WeatherAirtemperature1mSingle_value15Min
 
-	infovis.sampleSVG.append("circle")
-		.style("stroke", "gray")
-		.style("fill", "white")
-		.attr("r", 40)
-		.attr("cx", 50)
-		.attr("cy", 50)
-		.on("mouseover", function(){d3.select(this).style("fill", "aliceblue");})
-		.on("mouseout", function(){d3.select(this).style("fill", "white");});
-}
-
-// TODO: test - Does this work? If yes, does it mean non linear execution?
-function setUpEventPassingFromQtToJS(){
-
-	// qtPushButton's signal 'clicked' is connected with a JavaScript function
-	qtPushButton.clicked.connect(someFunction);
-	var buttonText = qtPushButton.text;
-	function someFunction()
-	{
-		d3.select("#viz")
-			.append("text")
-			.text("Clicked! ");
-
-		d3.select("#viz").selectAll("circle").style("fill", "red");
-
-		// Set back the buttons text (see below)
-		qtPushButton.text = buttonText;
+	var dimXAccess = function(rowAccessor){
+		return rowAccessor.access("TimestampMeasurement")[0];
 	}
-}
+	var dimYAccess = function(rowAccessor){
+		return rowAccessor.access("WeatherAirtemperature1mSingle_value15Min")[0];
+	}
 
-function setUpEventPassingFromJSToQt(){
-
-	// Pass data back to Qt
-	infovis.sampleSVG.selectAll("circle").on(
-		"click",
-		function(){
-			qtPushButton.text = "Javascript takes over!";
-		}
+	// local extent
+	// Question: may it be better to use some fixed borders?
+	var dimXExtent = d3.extent(
+		accessor,
+		dimXAccess
 	);
-}
+	var dimYExtent = d3.extent(
+		accessor,
+		dimYAccess
+	);
 
+	var xScale = d3.time.scale()
+		.domain(dimXExtent)
+		.range([0, width-1]);
+
+	var yScale = d3.scale.linear()
+		.domain(dimYExtent)
+		.range([height-1, 0]);
+
+	var circleSelection = svgSelection.selectAll("circle")
+				.data(accessor);
+
+	circleSelection.exit()
+		.remove();
+
+	var enteredCircles = circleSelection.enter()
+		.append("circle")
+	enteredCircles
+		.attr(
+			"r",
+			2
+		);
+
+	circleSelection
+		.attr(
+			"cy",
+			function(rowAccessor){
+				return yScale(dimYAccess(rowAccessor));
+			}
+		)
+		.attr(
+			"cx",
+			function(rowAccessor){
+				return xScale(dimXAccess(rowAccessor));
+			}
+		);
+};
+
+//###########################
+//### DataAccessorFactory ###
+//###########################
 infovis.DataAccessorFactory = function(values, metaDataRelation){
 
 	var DataAccessor = infovis.DataAccessor;
@@ -85,12 +107,25 @@ infovis.DataAccessorFactory = function(values, metaDataRelation){
 	};
 }
 
+//####################
+//### DataAccessor ###
+//####################
 /**
  * a DataAccessor is an JavaScript array that stores indices (integers >= 0 or undefined) or other DataAccessors
  * DataAccessor is refered as 'accessor' in the following
 **/
 infovis.DataAccessor = {};
 var DataAccessor = infovis.DataAccessor;
+
+DataAccessor.isDataAccessor = function(object){
+	var result = false;
+
+	if(object.isDataAccessor !== undefined){
+		result = object.isDataAccessor();
+	}
+
+	return result;
+}
 
 DataAccessor.inject = function(baseDataIndices, dataStorage){
 
@@ -408,4 +443,81 @@ DataAccessor.prototype.meta = function(value){
 	}
 
 	return result;
+}
+
+DataAccessor.prototype.isDataAccessor = function(){
+
+	return true;
+}
+
+//#################
+//### SVGCanvas ###
+//#################
+// constructor
+infovis.Canvas = function(svgParentIdentifier, width, height){
+
+
+
+	//#######################
+	//### private methods ###
+	//#######################
+	var setUpSVG  = function(){
+
+		this.svgSelection = d3.select(svgParentIdentifier).append("svg");
+
+		this.svgSelection
+			.attr("xmlns", "http://www.w3.org/2000/svg")
+			.attr("version", "1.1")
+	};
+
+	var setUpListener = function(){
+
+		var thisDOMElement = this.svgSelection[0][0];
+
+		this.onWindowResizeListener = function(event){
+
+			thisDOMElement.dispatchEvent(new Event("resize"));
+		};
+	}
+
+	var setUpEvents = function(){
+
+		var thisCanvas = this;
+
+		this.svgSelection.on(
+			"resize",
+			function(date, index){
+			// @param this - current DOM element
+				var computedStyle = window.getComputedStyle(this, null);
+				var width = window.parseInt(computedStyle.width);
+				var height = window.parseInt(computedStyle.height);
+
+				thisCanvas.onResize(width, height);
+			}
+		);
+
+		window.addEventListener("resize", thisCanvas.onWindowResizeListener);
+	};
+
+
+	//############
+	//### main ###
+	//############
+	setUpSVG.call(this);
+	setUpListener.call(this);
+	setUpEvents.call(this);
+}
+
+infovis.Canvas.prototype.svgSelection = undefined;
+
+infovis.Canvas.prototype.onWindowResizeListener = undefined;
+
+infovis.Canvas.prototype.onResize = function(width, height){
+
+	console.log([width, height]);
+}
+
+infovis.Canvas.prototype.beforeRemove = function(){
+
+	window.removeEventListener("resize", this.onWindowResizeListener);
 }
