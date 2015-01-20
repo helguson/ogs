@@ -13,7 +13,7 @@
 			body {
 				height: 95%;	/*
 						this is an emperical value, that fills the page
-						almost completely and avoids scroll bars. (firefox)
+						almost completely and avoids scroll bars. (QTWebview)
 						TODO: What is the reason?
 						*/
 			}
@@ -45,7 +45,7 @@
 
 				if(isD3Available()){
 
-					window.testCanvas = new infovis.Canvas("#viz");
+					window.testCanvas = new infovis.LineDiagram("#viz");
 				}
 			}
 

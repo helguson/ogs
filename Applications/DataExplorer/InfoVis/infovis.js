@@ -450,13 +450,133 @@ DataAccessor.prototype.isDataAccessor = function(){
 	return true;
 }
 
+//###################
+//### inheritance ###
+//###################
+/**
+ * mechanism to emulate singular inheritance
+ * This mechanism chains prototypes in order to create a child-parent-relation.
+ * This mechanism consist of two methods, one for chaining prototypes to declare
+ * parents (extend) and one for calling the parent constructor within a
+ * constructor (applyParentConstructorTo). These methods are extensions of
+ * Function.prototype. By this they are members of the constructor function.
+ *
+ * example:
+ * <code>
+ * Parent = function(){
+ * 	this.adultStuff = 300;
+ * };
+ *
+ * Parent.prototype.getAdultStuff = function(){
+ * 	return "This is Sparta!";
+ * }
+ *
+ * Child = function(){
+ * 	var resultInstance = Child.applyParentConstructorTo(this);
+ *
+ * 	resultInstance.childStuff = 1*1;
+ * }
+ * Child.extend(Parent);
+ *
+ * Child.prototype.getChildishStuff = function(){
+ * 	return this.childStuff;
+ * }
+ *
+ * var childInstance = new Child();
+ * </code>
+ */
+
+/**
+ * @method Function.prototype.applyParentConstructorTo(instance, args
+ * [, constructorReplacedInstanceHandler])
+ *
+ * @brief if parent constructor exists, applies it on given instance with given arguments
+ * @throws exception if constructor replaced initial instance and no handler is given
+ *
+ * @param this - current class (constructor)
+ *
+ * @param instance - current instance on which the parent constructor shall be applied
+ *
+ * @param arguments - arguments for parent constructor
+ *
+ * @param constructorReplacedInstanceHandler(initialInstance, constructorResultInstance) -
+ * function that is called if constructor replaced initial instance by another instance.
+ * (i. e. Array)
+ * 	@param this - current class (constructor)
+ *
+ * 	@param initialInstance - instance that was initially used to call constructor
+ *
+ * 	@param constructorResultInstance - instance that was returned by constructor
+ *
+ * @returns result of constructor call
+ */
+Function.prototype.applyParentConstructorTo = function(instance, args, constructorReplacedInstanceHandler){
+	//#######################
+	//### private methods ###
+	//#######################
+	var handleReplacedInstance = function(initialInstance, constructorResultInstance, handler){
+
+		if(typeof constructorReplacedInstanceHandler !== "function"){
+
+			throw new Error("no handler is given for case: constructor replaced initial instance");
+		}
+		else{
+
+			return handler.call(this, initialInstance, constructorResultInstance);
+		}
+	};
+
+	//############
+	//### main ###
+	//############
+	var parentPrototype = Object.getPrototypeOf(this.prototype);
+	var resultInstance = instance;
+
+	if(parentPrototype !== null){
+
+		var parentConstructor = parentPrototype.constructor;
+
+		resultInstance = parentConstructor.apply(instance, args);
+
+		var constructorReplacedInstance = instance !== resultInstance;
+		if(constructorReplacedInstance){
+
+			resultInstance = handleReplacedInstance.call(
+				this,
+				instance,
+				resultInstance,
+				constructorReplacedInstanceHandler
+			);
+		}
+	}
+
+	return resultInstance;
+}
+
+if (typeof Object.setPrototypeOf !== "function"){
+	Object.setPrototypeOf = function(object, goalPrototype){
+		object.__proto__ = goalPrototype;
+	}
+}
+
+/**
+ * @brief emulates inheritance by chaining prototypes
+ * @param this - child class (constructor)
+ * @param parentClass - parent class (constructor)
+ * notice, this function requires to define the constructor first and the parent
+ * relation secondly
+ */
+Function.prototype.extend = function(parentClass){
+
+	Object.setPrototypeOf(this.prototype, parentClass.prototype);
+}
+
+
 //#################
 //### SVGCanvas ###
 //#################
 // constructor
-infovis.Canvas = function(svgParentIdentifier, width, height){
-
-
+infovis.Canvas = function(svgParentIdentifier){
 
 	//#######################
 	//### private methods ###
@@ -521,3 +641,20 @@ infovis.Canvas.prototype.beforeRemove = function(){
 
 	window.removeEventListener("resize", this.onWindowResizeListener);
 }
+
+//####################
+//### line diagram ###
+//####################
+
+infovis.LineDiagram = function(svgParentIdentifier, dataAccessor){
+
+	//############
+	//### main ###
+	//############
+	var result = infovis.LineDiagram.applyParentConstructorTo(this, [svgParentIdentifier]);
+
+	result.setUpDiagram(dataAccessor);
+
+	return result;
+}
+infovis.LineDiagram.extend(infovis.Canvas);
