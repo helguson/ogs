@@ -409,6 +409,27 @@ var analyse02 = function(times){
 	return result;
 }
 
+/**
+ * @param index - number or list structure of numbers
+ */
+infovis.getAccessor = function(index, dataStorage){
+	var result;
+
+	if(Array.isArray(index)){
+		result = new infovis.DataAccessor(
+			index,
+			dataStorage
+		);
+	}
+	else{
+		result = new infovis.DatumAccessor(
+			index,
+			dataStorage
+		);
+	}
+
+	return result;
+}
 
 //###########################
 //### DataAccessorFactory ###
@@ -628,7 +649,7 @@ DataAccessor.isDataAccessor = function(object){
 /**
  * @asserts index is Number or index is Array of Numbers
  */
-infovis.DataAccessor.prototype.at = function(index){
+DataAccessor.prototype.at = function(index){
 
 	//#######################
 	//### private methods ###
@@ -665,19 +686,10 @@ infovis.DataAccessor.prototype.at = function(index){
 		index
 	);
 
-
-	if(Array.isArray(innerElement)){
-		result = new infovis.DataAccessor(
-			innerElement,
-			this.dataStorage
-		);
-	}
-	else{
-		result = new infovis.DatumAccessor(
-			innerElement,
-			this.dataStorage
-		);
-	}
+	result = infovis.getAccessor(
+		innerElement,
+		this.dataStorage
+	);
 
 	return result;
 }
@@ -1031,6 +1043,265 @@ DataAccessor.prototype.findFirst = function(predicateFunctor, context){
 
 DataAccessor.prototype.innerData = function(){
 	return [].concat(this);
+}
+
+//##############################
+//### DataAccessor Iterators ###
+//##############################
+//########################
+//### AbstractIterator ###
+//########################
+DataAccessor.AbstractIterator = function(dataAccessor){
+
+	this._dataAccessor = dataAccessor;
+
+	return this;
+}
+
+/**
+ * abstract
+ */
+DataAccessor.AbstractIterator.prototype.hasNext = function(){
+	throw new Error("this method is abstract");
+}
+
+DataAccessor.AbstractIterator.prototype.next = function(){
+
+	if(!this.hasNext()){
+		throw new Error("iterator.next() was called though iterator has no next element");
+	}
+	else{
+		var result = this._getCurrentElement();
+
+		this._determineNextElement();
+
+		return result;
+	}
+}
+
+/**
+ * @asserts that the element exists
+ */
+DataAccessor.AbstractIterator.prototype._getCurrentElement = function(){
+
+	var elementsDescendingIndex = this._getCurrentElementsDescendingIndex();
+	var elementDataIndices = this._getCurrentElementsDataIndices();
+
+	var elementsAccessor = infovis.getAccessor(
+		elementDataIndices,
+		this._dataAccessor.dataStorage
+	);
+
+	return {
+		accessor: elementsAccessor,
+		descendingIndex: elementsDescendingIndex
+	}
+}
+
+/**
+ * abstract
+ */
+DataAccessor.AbstractIterator.prototype._getCurrentElementsDescendingIndex = function(){
+	throw new Error("this method is abstract");
+}
+
+/**
+ * abstract
+ */
+DataAccessor.AbstractIterator.prototype._getCurrentElementsDataIndices = function(){
+	throw new Error("this method is abstract");
+}
+
+/**
+ * abstract
+ */
+DataAccessor.AbstractIterator.prototype._determineNextElement = function(){
+
+
+	this._determineNextPossibleElement();
+
+	while(this._currentElementCanBeSkipped()){
+		this._determineNextPossibleElement();
+	}
+}
+
+/**
+ * abstract
+ */
+DataAccessor.AbstractIterator.prototype._currentElementCanBeSkipped = function(){
+	throw new Error("this method is abstract");
+}
+
+/**
+ * abstract
+ */
+DataAccessor.AbstractIterator.prototype._determineNextPossibleElement = function(){
+	throw new Error("this method is abstract");
+}
+
+/**
+ * abstract
+ */
+DataAccessor.AbstractIterator.prototype.break = function(){
+	throw new Error("this method is abstract");
+}
+
+/**
+ * abstract
+ */
+DataAccessor.AbstractIterator.prototype.reset = function(){
+	throw new Error("this method is abstract");
+}
+
+
+//################################
+//### Inorder Forward Iterator ###
+//################################
+DataAccessor.InorderForwardIterator = function(dataAccessor){
+	//#######################
+	//### private methods ###
+	//#######################
+	/// @param this - iterator
+	var setUp = function(instance){
+		/// stack of grandparents
+		instance._grandParents = undefined;
+		instance._parent = undefined;
+		instance._parentDescendingIndex = undefined;
+		instance._nextElementIndexInParent = undefined;
+	}
+
+
+	//############
+	//### main ###
+	//############
+	var instance = DataAccessor.InorderForwardIterator.applyParentConstructorTo(
+		this,
+		[dataAccessor]
+	);
+
+	setUp.call(
+		this,
+		instance
+	);
+
+	instance.reset();
+
+	return instance;
+}
+DataAccessor.InorderForwardIterator.extend(DataAccessor.AbstractIterator);
+
+DataAccessor.InorderForwardIterator.prototype.hasNext = function(){
+
+	return this._nextElementIndexInParent != undefined;
+}
+
+DataAccessor.InorderForwardIterator.prototype._getCurrentElementsDescendingIndex = function(){
+
+	return this._parentDescendingIndex.concat([this._nextElementIndexInParent]);
+}
+
+
+DataAccessor.InorderForwardIterator.prototype._getCurrentElementsDataIndices = function(){
+
+	return this._parent[this._nextElementIndexInParent];
+}
+
+/**
+ * @brief skips remaining elements
+ * if
+ */
+DataAccessor.InorderForwardIterator.prototype.break = function(){
+	this._nextElementIndexInParent = undefined;
+}
+
+DataAccessor.InorderForwardIterator.prototype._currentElementCanBeSkipped = function(){
+	var currentElement = this._parent[this._nextElementIndexInParent];
+
+	return Array.isArray(currentElement);
+}
+
+DataAccessor.InorderForwardIterator.prototype._determineNextPossibleElement = function(){
+	/**
+	 * @param this - current iterator
+	 */
+	var descend = function(){
+
+		this._grandParents.push(this._parent);
+		this._parentDescendingIndex.push(this._nextElementIndexInParent);
+
+		this._parent = this._parent[this._nextElementIndexInParent];
+		this._nextElementIndexInParent = 0;
+	}
+
+	/**
+	 * @param this - current iterator
+	 */
+	var ascendIfNecessary = function(){
+
+		var index = this._nextElementIndexInParent;
+
+		while(index != undefined &&  traversedParent.call(this, index)){
+
+			if(parentIsRoot.call(this)){
+				// cannot ascend further
+				index = undefined;
+			}
+			else{
+				this._parent = this._grandParents.pop();
+				index = this._parentDescendingIndex.pop();
+				// make step as array was processed before descending
+				index++;
+			}
+		}
+
+		this._nextElementIndexInParent = index;
+	}
+
+	/**
+	 * @param this - current iterator
+	 */
+	var traversedParent = function(index){
+
+		return index >= this._parent.length;
+	}
+
+	/**
+	 * @param this - current iterator
+	 */
+	var parentIsRoot = function(){
+
+		return this._grandParents.length == 0;
+	}
+
+	//############
+	//### main ###
+	//############
+
+	var currentElement = this._parent[this._nextElementIndexInParent];
+
+	if(Array.isArray(currentElement)){
+		descend.call(this);
+	}
+	else{
+		this._nextElementIndexInParent++;
+	}
+
+	ascendIfNecessary.call(this);
+}
+
+DataAccessor.InorderForwardIterator.prototype.reset = function(){
+
+	this._grandParents = [];
+
+	// set root as current parent
+	this._parent = this._dataAccessor.innerData();
+	this._parentDescendingIndex = [];
+
+	this._nextElementIndexInParent = 0;
+
+	if(this._currentElementCanBeSkipped()){
+		this._determineNextElement();
+	}
 }
 
 //#################
