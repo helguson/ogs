@@ -695,129 +695,71 @@ DataAccessor.prototype.at = function(index){
 }
 
 /**
- * @brief applies functor for every contained element
+ * @method foreach(functor[, iteratorFactory])
+ * @brief applies functor using iterator
  * @param functor([element[, descendingIndex[, originalDataAccessor]]])
- * 	@param this - given context or undefined
+ * 	@param this - object, that has a break method to cancel looping after
+ * 	the current functor execution. This is done by calling the iterator's
+ * 	break method.
  * 	@param element - DatumAccessor (or DataAccessor if
  * 	applyFunctorToArrayElements == true) for current element
  * 	@param descendingIndex - of current element
  * 	@param originalDataAccessor -
- * @param context - object to use as this for functor
- * @param applyFunctorToArrayElements -
+ * @param iteratorFactory - if not given then an InorderForwardIterator is used
+ * 	@returns iterator that has a interface like DataAccessor.AbstractIterator
+ * 	@param accessor -
  */
-DataAccessor.prototype.forEach = function(functor, context, applyFunctorToArrayElements){
-	//########################
-	//### helper variables ###
-	//########################
-	var appliableDescendingIndices;
+DataAccessor.prototype.forEach = function(functor, iteratorFactory){
+	var iterator;
+	var context;
 
 	//#######################
 	//### private methods ###
 	//#######################
 	var setUp = function(){
-		appliableDescendingIndices = [];
 
-		var rootDescendingIndex = [];
-		appliableDescendingIndices.push(rootDescendingIndex);
-
-		context = (arguments.length >= 2)?
-			context
-			: undefined;
-
-		applyFunctorToArrayElements = (arguments.length >= 3)?
+		iteratorFactory = (arguments.length >= 2)?
 			applyFunctorToArrayElements
-			: false;
-	}
+			: function(accessor){
+				return new infovis.DataAccessor.InorderForwardIterator(accessor);
+			};
 
-	var hasNextDescendingIndex = function(){
+		iterator = iteratorFactory(this);
 
-		return appliableDescendingIndices.length > 0;
-	}
-
-	var getNextDescendingIndex = function(){
-
-		return appliableDescendingIndices.shift();
-	}
-
-	/**
-	 * @param this - current DataAccessor
-	 */
-	var handleArray = function(arraysDescendingIndex, array){
-
-		var childrensDescendingIndices = Array.prototype.map.call(
-			array,
-			function(element, index){
-
-				return determineDescendingIndexFrom(
-					arraysDescendingIndex,
-					index
-				);
+		context = {
+			break: function(){
+				iterator.break();
 			}
-		);
-
-		prependDescendingIndices(childrensDescendingIndices);
-	}
-
-	var determineDescendingIndexFrom = function(parentDescendingIndex, indexInParent){
-
-		return parentDescendingIndex.concat(indexInParent);
-	}
-
-	var prependDescendingIndices = function(descendingIndices){
-
-		appliableDescendingIndices = descendingIndices.concat(appliableDescendingIndices);
+		};
 	}
 
 	//############
 	//### main ###
 	//############
 
-	setUp();
+	setUp.call(this);
 
-	while(hasNextDescendingIndex()){
+	while(iterator.hasNext()){
 
-		var currentDescendingIndex = getNextDescendingIndex();
-		var currentAccessor = this.at(currentDescendingIndex);
+		var next = iterator.next();
+		var currentDescendingIndex = next.descendingIndex;
+		var currentAccessor = next.accessor;
 
-		var elementIsArray = infovis.DataAccessor.isDataAccessor(currentAccessor);
-		if(elementIsArray){
-
-			handleArray.call(
-				this,
-				currentDescendingIndex,
-				currentAccessor
-			);
-		}
-
-		//       | applyFunctorToArrayElements
-		//       |       0             1
-		// -----------------------------------
-		// array |
-		//   0   |       1             1
-		//   1   |       0             1
-		if(
-			!elementIsArray
-			|| applyFunctorToArrayElements
-		){
-
-			functor.call(
-				context,
-				currentAccessor,
-				currentDescendingIndex,
-				this
-			);
-		}
-
+		functor.call(
+			context,
+			currentAccessor,
+			currentDescendingIndex,
+			this
+		);
 	}
 }
 
 /**
  * @param mappingFunctor([element[, descendingIndex[, originalDataAccessor]]])
- * 	@param this - given context or undefined
+ * 	@param this - see forEach
  * 	@param element - DatumAccessor for current element
  * 	@param descendingIndex - of current element
  * 	@param originalDataAccessor -
- * @param context - object to use as this for mappingFunctor
  */
 DataAccessor.prototype.map = function(mappingFunctor, context){
 
@@ -907,16 +849,12 @@ DataAccessor.prototype.map = function(mappingFunctor, context){
 	var setUp = function(){
 
 		result = createStructuralCopyOf(this);
-
-		context = (arguments.length >= 2)?
-			context
-			: undefined;
 	}
 
 	var functor = function(accessor, descendingIndex, originalDataAccessor){
 
 		var mappedElement = mappingFunctor.call(
-			context,
+			this,
 			accessor,
 			descendingIndex,
 			originalDataAccessor
@@ -1003,40 +941,52 @@ DataAccessor.prototype.split = function(){
 }
 
 /**
+ * @method findFirst(predicateFunctor[, iteratorFactory])
  * @param predicateFunctor([element[, descendingIndex[, originalDataAccessor]]])
- * 	@param this - given context or undefined
  * 	@param element - DatumAccessor for current element
  * 	@param descendingIndex - of current element
  * 	@param originalDataAccessor -
- * @param context - object to use as this for predicateFunctor
+ * @param iteratorFactory - see forEach
  */
-// TODO: implement break on "predicate returns true"
-DataAccessor.prototype.findFirst = function(predicateFunctor, context){
+DataAccessor.prototype.findFirst = function(predicateFunctor, iteratorFactory){
 
-	var foundElementThatFulfilledPredicate = false;
+	//#######################
+	//### helper variables ##
+	//#######################
 	var result = undefined;
-	context = (arguments.length>=2)? context: undefined;
 
-	this.forEach(
-		function(elementAccessor, descendingIndex, originalDataAccessor){
+	//#######################
+	//### private methods ###
+	//#######################
+	var functor = function(elementAccessor, descendingIndex, originalDataAccessor){
 
-			if(!foundElementThatFulfilledPredicate){
+		var predicateResult = predicateFunctor.call(
+			undefined,
+			elementAccessor,
+			descendingIndex,
+			originalDataAccessor
+		);
 
-				var predicateResult = predicateFunctor.call(
-					context,
-					elementAccessor,
-					descendingIndex,
-					originalDataAccessor
-				);
+		if(predicateResult == true){
 
-				if(predicateResult == true){
-
-					foundElementThatFulfilledPredicate = true;
-					result = elementAccessor;
-				}
-			}
+			result = elementAccessor;
+			this.break();
 		}
-	)
+	}
+
+	//############
+	//### main ###
+	//############
+	var args = [functor];
+	if(arguments.length >= 2){
+		args.push(iteratorFactory);
+	}
+
+
+	this.forEach.apply(
+		this,
+		args
+	);
 
 	return result;
 }

@@ -103,6 +103,21 @@
 				);
 			}
 
+			function executeAndMeasure(functor, context, args){
+				var startTime = Date.now();
+
+				functor.apply(
+					context,
+					args
+				);
+
+				var endTime = Date.now();
+
+				var elapsedTime = endTime - startTime;
+
+				return elapsedTime;
+			}
+
 			function onClick(){
 
 				console.log("onclick dummy");
