@@ -22,7 +22,27 @@ infovis.testHeight = 300;
 
 // @param accessor - list of rows (lists)
 infovis.setUpTestDiagram = function(accessor){
+	//#######################
+	//### private methods ###
+	//#######################
+	var getRowCategoryAccessor = function(category, exampleRow) {
 
+		var indexOfCategory = exampleRow.indexOf(
+			function(elementAccessor, descendingIndex){
+
+				return elementAccessor.meta("name").access() == category;
+			}
+		)
+
+		return function(rowAccessor){
+
+			return rowAccessor.at(indexOfCategory).access();
+		}
+	}
+
+	//############
+	//### main ###
+	//############
 	var width = accessor.length*infovis.testWidthFactor;
 	var height = infovis.testHeight;
 
@@ -39,23 +59,14 @@ infovis.setUpTestDiagram = function(accessor){
 	//dim2 - number
 	//WeatherAirtemperature1mSingle_value15Min
 
-	var dimXAccess = function(rowAccessor){
-
-		return rowAccessor.findFirst(
-				function(elementAccessor){
-					return elementAccessor.meta("name").access() == "TimestampMeasurement";
-				}
-			)
-			.access();
-	}
-	var dimYAccess = function(rowAccessor){
-		return rowAccessor.findFirst(
-				function(elementAccessor){
-					return elementAccessor.meta("name").access() == "WeatherAirtemperature1mSingle_value15Min";
-				}
-			)
-			.access();
-	}
+	var dimXAccess = getRowCategoryAccessor(
+		"TimestampMeasurement",
+		accessor.at(0)
+	);
+	var dimYAccess = getRowCategoryAccessor(
+		"WeatherAirtemperature1mSingle_value15Min",
+		accessor.at(0)
+	);
 
 	// local extent
 	// Question: may it be better to use some fixed borders?
@@ -970,6 +981,60 @@ DataAccessor.prototype.findFirst = function(predicateFunctor, iteratorFactory){
 		if(predicateResult == true){
 
 			result = elementAccessor;
+			this.break();
+		}
+	}
+
+	//############
+	//### main ###
+	//############
+	var args = [functor];
+	if(arguments.length >= 2){
+		args.push(iteratorFactory);
+	}
+
+
+	this.forEach.apply(
+		this,
+		args
+	);
+
+	return result;
+}
+
+/**
+ * @method indexOf(predicateFunctor[, iteratorFactory])
+ * @brief searches for first element that fulfils the given predicate
+ * @returns descending index of found element or 'undefined' if no element was
+ * found
+ * @param predicateFunctor([element[, descendingIndex[, originalDataAccessor]]])
+ * 	@param element - DatumAccessor for current element
+ * 	@param descendingIndex - of current element
+ * 	@param originalDataAccessor -
+ * @param iteratorFactory - see forEach
+ */
+DataAccessor.prototype.indexOf = function(predicateFunctor, iteratorFactory){
+
+	//#######################
+	//### helper variables ##
+	//#######################
+	var result = undefined;
+
+	//#######################
+	//### private methods ###
+	//#######################
+	var functor = function(elementAccessor, descendingIndex, originalDataAccessor){
+
+		var predicateResult = predicateFunctor.call(
+			undefined,
+			elementAccessor,
+			descendingIndex,
+			originalDataAccessor
+		);
+
+		if(predicateResult == true){
+
+			result = descendingIndex;
 			this.break();
 		}
 	}

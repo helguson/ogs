@@ -61,28 +61,31 @@
 				// TODO: create diagram object
 			}
 
+			function getRowCategoryAccessor(category, exampleRow) {
+
+				var indexOfCategory = exampleRow.indexOf(
+					function(elementAccessor, descendingIndex){
+
+						return elementAccessor.meta("name").access() == category;
+					}
+				)
+
+				return function(rowAccessor){
+
+					return rowAccessor.at(indexOfCategory).access();
+				}
+			}
+
 			function extractCategory(category, accessor) {
 				var result;
 
 				// accessor.forEach(functor, { iterator: new TopLevelIterator(), applyToArrayElements: true });
-				var index = -1;
 				var firstLineAccessor = accessor.at(0);
 
-				firstLineAccessor.forEach(
-					function(elementAccessor, descendingIndex){
-						if(index == -1){
-							var matched = elementAccessor.meta("name").access() == category;
-							if(matched){
-								index = descendingIndex[0];
-							}
-						}
-					}
-				);
+				var categoryAccessor = getRowCategoryAccessor(category, firstLineAccessor);
 
 				result = accessor.split().map(
-					function(rowAccessor){
-						return rowAccessor.at(index).access();
-					}
+					categoryAccessor
 				);
 
 				return result;
