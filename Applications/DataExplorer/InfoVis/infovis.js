@@ -1060,6 +1060,58 @@ DataAccessor.prototype.innerData = function(){
 	return [].concat(this);
 }
 
+/**
+ * @method sort(compareFunctor) const
+ * @brief get DataAccessor, that is sorted on top-level of hierachy, using
+ * Array.prototype.sort
+ * @param compareFunctor(a, b)
+ * 	@returns -1 if a is less than b, 1 if a is greater than b, 0 if a and be
+ * 	are equal by some ordering criterion
+ * 	@param a - DatumAccessor / DataAccessor
+ * 	@param b - DatumAccessor / DataAccessor
+ */
+DataAccessor.prototype.sort = function(compareFunctor){
+
+	var arrayOfAccessor = this.split();
+
+	var sortedArrayOfAccessors = arrayOfAccessor.sort(compareFunctor);
+
+	var sortedArrayOfData = sortedArrayOfAccessors.map(
+		function(accessor){
+			return accessor.innerData();
+		}
+	);
+
+	return new DataAccessor(
+		sortedArrayOfData,
+		this.dataStorage
+	);
+}
+
+/**
+ * @method filter(predicate) const
+ * @brief get DataAccessor, whose top-level elements are filtered by a given
+ * predicate, using Array.prototype.filter
+ * @param predicate (TODO: )
+ */
+DataAccessor.prototype.filter = function(predicate){
+
+	var arrayOfAccessor = this.split();
+
+	var filteredArrayOfAccessors = arrayOfAccessor.filter(predicate);
+
+	var filteredArrayOfData = filteredArrayOfAccessors.map(
+		function(accessor){
+			return accessor.innerData();
+		}
+	);
+
+	return new DataAccessor(
+		filteredArrayOfData,
+		this.dataStorage
+	);
+}
+
 //##############################
 //### DataAccessor Iterators ###
 //##############################
