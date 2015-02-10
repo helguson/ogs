@@ -30,7 +30,7 @@ infovis.setUpTestDiagram = function(accessor){
 		var indexOfCategory = exampleRow.indexOf(
 			function(elementAccessor, descendingIndex){
 
-				return elementAccessor.meta("name").access() == category;
+				return elementAccessor.meta("column").meta("column_element_name").access() == category;
 			}
 		)
 

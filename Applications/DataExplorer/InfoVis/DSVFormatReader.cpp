@@ -9,9 +9,15 @@
 //#################
 //### constants ###
 //#################
-const QString DSVFormatReader::NUMBER = QString("NUMBER");
-const QString DSVFormatReader::TEXT = QString("TEXT");
-const QString DSVFormatReader::TIME = QString("TIME");
+const QString DSVFormatReader::NUMBER				= QString("number");
+const QString DSVFormatReader::TEXT				= QString("string");
+const QString DSVFormatReader::TIME				= QString("time");
+
+const QString DSVFormatReader::COLUMN_ELEMENT_TYPE_IDENTIFIER	= QString("column_element_type");
+const QString DSVFormatReader::COLUMN_ELEMENT_UNIT_IDENTIFIER	= QString("column_element_unit");
+const QString DSVFormatReader::COLUMN_ELEMENT_NAME_IDENTIFIER	= QString("column_element_name");
+const QString DSVFormatReader::COLUMN_IDENTIFIER		= QString("column");
+const QString DSVFormatReader::ROW_IDENTIFIER			= QString("row");
 
 //######################################
 //### constructors and deconstructor ###
@@ -22,11 +28,11 @@ DSVFormatReader::DSVFormatReader(QRegExp const & delimiter, QVariantList const &
 	attributeStructures(attributeStructures),
 	delimiter(delimiter),
 	headerElementStructure(QRegExp("\"(\\S*)( \\(([\\S ]+)\\))?\"")),
-	names(),
 	types(getTypes()),
-	units(),
+	columnDateIndices(),
 	dataBuilder()
-{}
+{	
+}
 
 DSVFormatReader::DSVFormatReader()
 	:DSVFormatReader(QRegExp(","), getValidStructures())
@@ -66,15 +72,25 @@ void DSVFormatReader::processFile(QString const & path){
 	file.close();
 }
 
+void DSVFormatReader::setUpSinkDates(){
+	
+	this->columnElementTypeIdentifierDateIndex = this->dataBuilder.addDateAndReturnIndex(QVariant(DSVFormatReader::COLUMN_ELEMENT_TYPE_IDENTIFIER));
+	this->columnElementUnitIdentifierDateIndex = this->dataBuilder.addDateAndReturnIndex(QVariant(DSVFormatReader::COLUMN_ELEMENT_UNIT_IDENTIFIER));
+	this->columnElementNameIdentifierDateIndex = this->dataBuilder.addDateAndReturnIndex(QVariant(DSVFormatReader::COLUMN_ELEMENT_NAME_IDENTIFIER));
+	this->columnIdendifierDateIndex = this->dataBuilder.addDateAndReturnIndex(QVariant(DSVFormatReader::COLUMN_IDENTIFIER));
+	this->rowIdentifierDateIndex = this->dataBuilder.addDateAndReturnIndex(QVariant(DSVFormatReader::ROW_IDENTIFIER));
+}
+
 void DSVFormatReader::setUpProcessing(){
 	
 	// clear previous extracted meta data
-	this->names.clear();
-	this->units.clear();
+	this->columnDateIndices.clear();
 	
 	// clear previous extracted data
 	this->dataBuilder.reset();
 	this->baseDataIndices.clear();
+	
+	this->setUpSinkDates();
 }
 
 void DSVFormatReader::processFileData(QTextStream & filestream){
@@ -84,34 +100,47 @@ void DSVFormatReader::processFileData(QTextStream & filestream){
 	this->processBody(filestream);
 }
 
-void DSVFormatReader::processName(QString name){
+void DSVFormatReader::processName(QString name, int columnDateIndex){
 	
 	int dateID = this->dataBuilder.addDateAndReturnIndex(
 		QVariant(name)
 	);
-	this->names.push_back(dateID);
 	
-	// TODO: extract to remove redundancy
-	int identifierID = this->dataBuilder.addDateAndReturnIndex(
-		QVariant(QString("name"))
-	);
-	
-	this->dataBuilder.addAsMetaDataFor(dateID, identifierID);
+	this->dataBuilder.addAsMetaDataFor(dateID, this->columnElementNameIdentifierDateIndex);
+	this->dataBuilder.addAsMetaDataFor(columnDateIndex, dateID);
 }
 
-void DSVFormatReader::processUnit(QString unit){
+void DSVFormatReader::processUnit(QString unit, int columnDateIndex){
 	
 	int dateID = this->dataBuilder.addDateAndReturnIndex(
 		QVariant(unit)
 	);
-	this->units.push_back(dateID);
 	
-	// TODO: extract to remove redundancy
-	int identifierID = this->dataBuilder.addDateAndReturnIndex(
-		QVariant(QString("unit"))
+	this->dataBuilder.addAsMetaDataFor(dateID, this->columnElementUnitIdentifierDateIndex);
+	this->dataBuilder.addAsMetaDataFor(columnDateIndex, dateID);
+}
+
+
+void DSVFormatReader::processType(QString type, int columnDateIndex){
+	
+	int dateID = this->dataBuilder.addDateAndReturnIndex(
+		QVariant(type)
 	);
 	
-	this->dataBuilder.addAsMetaDataFor(dateID, identifierID);
+	this->dataBuilder.addAsMetaDataFor(dateID, this->columnElementTypeIdentifierDateIndex);
+	this->dataBuilder.addAsMetaDataFor(columnDateIndex, dateID);
+}
+
+
+int DSVFormatReader::setUpColumnDate(int columnIndex){
+	
+	int dateID = this->dataBuilder.addDateAndReturnIndex(QVariant(columnIndex));
+	
+	this->dataBuilder.addAsMetaDataFor(dateID, this->columnIdendifierDateIndex);
+	
+	this->columnDateIndices.push_back(dateID);
+	
+	return dateID;
 }
 
 // assert use before 'processBody', due to structure of dsv-format (header data in first line), so that filestream contains no meta data but data afterwards
@@ -120,12 +149,13 @@ void DSVFormatReader::processHead(QTextStream & filestream){
 	QString headRow = filestream.readLine();
 	QStringList headElements = headRow.split(this->delimiter);
 	
-	for(QString headElement: headElements){
+	for(int columnIndex = 0; columnIndex < headElements.length(); columnIndex++){
+		QString headElement = headElements.at(columnIndex);
 		
 		// TODO: extract to 'extractMetaData'
-		
 		QString name("");
 		QString unit("");
+		QString type = this->types.at(columnIndex).toString();
 		
 		// exactMatch is nessesary in order to initialize 'cap()'
 		if(this->headerElementStructure.exactMatch(headElement)){
@@ -135,8 +165,10 @@ void DSVFormatReader::processHead(QTextStream & filestream){
 			unit = this->headerElementStructure.cap(3);
 		}
 		
-		this->processName(name);
-		this->processUnit(unit);
+		int columnDateIndex = this->setUpColumnDate(columnIndex);
+		this->processName(name, columnDateIndex);
+		this->processUnit(unit, columnDateIndex);
+		this->processType(type, columnDateIndex);
 	}
 	
 		
@@ -146,21 +178,38 @@ void DSVFormatReader::processHead(QTextStream & filestream){
 // in order to transfer file data at once to JavaScript it will be stored recordwise in a QVariantMap with String indices
 void DSVFormatReader::processBody(QTextStream & filestream){
 	
+	// assert processHead processed nothing but row 0
+	int rowIndex = 1;
+	
 	while(!filestream.atEnd()){
 		
 		QString bodyRow = filestream.readLine();
-		this->processBodyRow(bodyRow);
+		this->processBodyRow(bodyRow, rowIndex);
+		
+		rowIndex++;
 	}
 }
 
+int DSVFormatReader::setUpRowDate(int rowIndex){
+	
+	int dateID = this->dataBuilder.addDateAndReturnIndex(
+		QVariant(rowIndex)
+	);
+	
+	this->dataBuilder.addAsMetaDataFor(dateID, this->rowIdentifierDateIndex);
+	
+	return dateID;
+}
+
 // assert |headElements| == |bodyElements/Row|
-void DSVFormatReader::processBodyRow(QString const & bodyRow){
+void DSVFormatReader::processBodyRow(QString const & bodyRow, int rowIndex){
 	
 	// reserve space for new row
 	this->baseDataIndices.push_back(QList<int>());
 	
 	// 1.
 	QStringList bodyRowElements = this->structure(bodyRow);
+	int rowDateIndex = this->setUpRowDate(rowIndex);
 	
 	// 2.
 	for(int columnIndex = 0; columnIndex < bodyRowElements.length(); columnIndex++){
@@ -181,8 +230,8 @@ void DSVFormatReader::processBodyRow(QString const & bodyRow){
 		
 		// 2.2 store date and assign meta data
 		int dateIndex = this->dataBuilder.addDateAndReturnIndex(dataElement);
-		this->dataBuilder.addAsMetaDataFor(dateIndex, this->names[columnIndex]);
-		this->dataBuilder.addAsMetaDataFor(dateIndex, this->units[columnIndex]);
+		this->dataBuilder.addAsMetaDataFor(dateIndex, this->columnDateIndices[columnIndex]);
+		this->dataBuilder.addAsMetaDataFor(dateIndex, rowDateIndex);
 		
 		this->baseDataIndices.last().push_back(dateIndex);
 	}

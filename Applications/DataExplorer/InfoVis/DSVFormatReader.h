@@ -81,15 +81,25 @@ public:
 	static const QString TEXT;
 	static const QString NUMBER;
 	static const QString TIME;
+	static const QString COLUMN_ELEMENT_TYPE_IDENTIFIER;
+	static const QString COLUMN_ELEMENT_UNIT_IDENTIFIER;
+	static const QString COLUMN_ELEMENT_NAME_IDENTIFIER;
+	static const QString COLUMN_IDENTIFIER;
+	static const QString ROW_IDENTIFIER;
 private:
-	// tmp meta data
-	// TODO: think about its structure (QVariantMap? / getSetOfMetaDataFor<Row/Column/Element/all>()?)
+	
 	QVariantList attributeStructures;
 	QRegExp delimiter;
 	QRegExp headerElementStructure;	//TODO: meta meta data?
-	QList<int> names;
 	QVariantList types;
-	QList<int> units;
+	
+	// tmp meta data references
+	QList<int> columnDateIndices;
+	int columnElementTypeIdentifierDateIndex;
+	int columnElementUnitIdentifierDateIndex;
+	int columnElementNameIdentifierDateIndex;
+	int columnIdendifierDateIndex;
+	int rowIdentifierDateIndex;
 	
 	// data
 	DataBuilder dataBuilder;
@@ -98,12 +108,16 @@ private:
 	// TODO: const correctness
 	
 	void setUpProcessing();
+	void setUpSinkDates();
 	void processFileData(QTextStream  & filestream);
 	void processHead(QTextStream & filestream);
-	void processName(QString name);
-	void processUnit(QString unit);
+	void processName(QString name, int columnDateIndex);
+	void processUnit(QString unit, int columnDateIndex);
+	void processType(QString type, int columnDateIndex);
+	int setUpColumnDate(int columnIndex);
 	void processBody(QTextStream & filestream);
-	void processBodyRow(QString const & bodyRow);
+	int setUpRowDate(int rowIndex);
+	void processBodyRow(QString const & bodyRow, int rowIndex);
 	QStringList structure(QString const & bodyRow);
 	bool confirmsValidityOf(QString const & bodyElement, int columnIndex);
 	bool hasValidStructure(QString const & bodyElement, int columnIndex);
