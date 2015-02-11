@@ -25,10 +25,14 @@ public:
 	
 	void store(std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation, std::unique_ptr<QVariantList> baseDataIndices);
 	void storeAndTransfer(std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation, std::unique_ptr<QVariantList> baseDataIndices);
-	void transferEveryStored();
+	
 	void announceYourselfTo(QWebFrame * frame);
 	
 	static const QString GATE_ANNOUNCEMENT_NAME;
+	
+public slots:
+	void transferEveryStored();
+	
 signals:
 	void transferredData(QVariantList values, QVariantList metaDataRelation, QVariantList baseDataIndices);
 	

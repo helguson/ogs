@@ -28,6 +28,8 @@
 
 			var GATE_ANNOUNCEMENT_NAME = "gate";
 
+			var dataSets = [];
+
 			function onLoad(){
 
 				removeMessageOfUnavailabilityOfJavaScript();
@@ -37,6 +39,8 @@
 
 					// connect slots
 					gate.transferredData.connect(onTransferredData);
+
+					gate.transferEveryStored();
 				}
 				else{
 
@@ -51,84 +55,24 @@
 
 			function onTransferredData(values, metaDataRelation, baseDataIndices){
 
-				window.factory = new infovis.DataAccessorFactory(values, metaDataRelation);
-				window.baseDataIndices = baseDataIndices;
-				window.testAccessor = factory.makeAccessorFrom(baseDataIndices);
+				var accessorFactory = new infovis.DataAccessorFactory(values, metaDataRelation);
+				var baseDataAccessor = accessorFactory.makeAccessorFrom(baseDataIndices);
 
-				// TODO: select dimensions
-				// TODO: select subset of data
-
-				// TODO: create diagram object
-			}
-
-			function getRowCategoryAccessor(category, exampleRow) {
-
-				var indexOfCategory = exampleRow.indexOf(
-					function(elementAccessor, descendingIndex){
-
-						return elementAccessor.meta("column").meta("column_element_name").access() == category;
-					}
-				)
-
-				return function(rowAccessor){
-
-					return rowAccessor.at(indexOfCategory).access();
-				}
-			}
-
-			function extractCategory(category, accessor) {
-				var result;
-
-				// accessor.forEach(functor, { iterator: new TopLevelIterator(), applyToArrayElements: true });
-				var firstLineAccessor = accessor.at(0);
-
-				var categoryAccessor = getRowCategoryAccessor(category, firstLineAccessor);
-
-				result = accessor.split().map(
-					categoryAccessor
-				);
-
-				return result;
-			}
-
-			function extractTestData(accessor){
-
-				var xValues = extractCategory("TimestampMeasurement", accessor);
-				var yValues = extractCategory("DevicesTemperaturedatalogger0mSingle_value15Min", accessor);
-
-				return xValues.map(
-					function(_, index){
-						return {
-							x: xValues[index],
-							y: yValues[index]
-						};
+				dataSets.push(
+					{
+						values: values,
+						metaDataRelation: metaDataRelation,
+						baseDataIndices: baseDataIndices,
+						accessorFactory: accessorFactory,
+						baseDataAccessor: baseDataAccessor
 					}
 				);
-			}
 
-			function executeAndMeasure(functor, context, args){
-				var startTime = Date.now();
-
-				functor.apply(
-					context,
-					args
-				);
-
-				var endTime = Date.now();
-
-				var elapsedTime = endTime - startTime;
-
-				return elapsedTime;
-			}
-
-			function onClick(){
-
-				console.log("onclick dummy");
 			}
 
 		</script>
 	</head>
-	<body onload="onLoad()" onclick="onClick()">
+	<body onload="onLoad()">
 		<div id="viz">
 				<p id="javaScriptNotAvailableDummy">JavaScript was not available</p>
 		</div>

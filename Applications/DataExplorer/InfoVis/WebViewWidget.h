@@ -44,7 +44,6 @@ public:
 
 public slots:
 	void announceToJavascript();
-	void initiateDataTransfer();
 	
 private:
 	JavaScriptGate*	gate;

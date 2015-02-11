@@ -49,7 +49,6 @@ void WebViewWidget::setUpSignalSlotConnections(){
 	QWebFrame *frame = this->webView->page()->mainFrame();
 	connect(frame, SIGNAL(javaScriptWindowObjectCleared()), this, SLOT(announceToJavascript()));
 	
-	connect(this->pushButton, SIGNAL(clicked()), this, SLOT(initiateDataTransfer()));
 	connect(this->reloadButton, SIGNAL(clicked()), this->webView, SLOT(reload()));
 }
 
@@ -59,12 +58,6 @@ void WebViewWidget::announceToJavascript()
 	frame->addToJavaScriptWindowObject("qtPushButton", this->pushButton);
 	
 	this->gate->announceYourselfTo(frame);
-}
-
-void WebViewWidget::initiateDataTransfer(){
-	
-	this->gate->transferEveryStored();
-
 }
 
 void WebViewWidget::loadTestData(){
@@ -77,7 +70,7 @@ void WebViewWidget::loadTestData(){
 		DSVFormatReader reader(delimiter, attributeStructures);
 		reader.processFile(relativeFilePath + fileName);
 		
-		this->gate->store(
+		this->gate->storeAndTransfer(
 			reader.getValues(),
 			reader.getMetaDataRelation(),
 			reader.getBaseDataIndices()
