@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<!--
+This document serves as a draft to the functionality to set up interactively the
+parameters of diagrams. It will be initialized using the present data sets using
+their base data accessors to access present categories.
+-->
+<html>
+	<head>
+		<meta charset="utf-8"></meta>
+		<title>Interaction Test</title>
+		<style>
+			div.group {
+				display: table-cell;
+				padding: 0.5em;
+				background-color: beige;
+			}
+
+			div.outerGroup {
+				padding-top: 0.5em;
+				padding-bottom: 0.5em;
+				border: 1px solid black;
+			}
+
+			div.innerGroup {
+			}
+
+			div.leafGroup {
+				display: block;
+				padding: 0.25em;
+				margin-bottom: 0.25em;
+				border: 1px solid rgba(0, 0, 0, 0.05);
+			}
+		</style>
+		<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
+		<script type="text/javascript">
+
+			function onLoad(){
+
+				var f = function(d){
+					return d;
+				};
+
+				d3.select("#selectDataSeries")
+					.selectAll("option").data(["series01", "series02"])
+					.enter().append("option")
+						.text(f);
+
+				d3.select("#selectDataSet")
+					.selectAll("option").data(["01", "02", "03"])
+					.enter().append("option")
+						.text(f);
+
+				d3.select("#selectXAttribute")
+					.selectAll("option").data(["date_of_measurement", "temperature", "humidity"])
+					.enter().append("option")
+						.text(f);
+
+				d3.select("#selectYAttribute")
+					.selectAll("option").data(["date_of_measurement", "temperature", "humidity"])
+					.enter().append("option")
+						.text(f);
+
+				d3.select("#selectSortingAttribute")
+					.selectAll("option").data(["date_of_measurement", "temperature", "humidity"])
+					.enter().append("option")
+						.text(f);
+			}
+
+		</script>
+	</head>
+	<body onload="onLoad()">
+		<div class="group outerGroup">
+			<div class="group innerGroup">
+				<div class="group leafGroup">
+					<div class="label">
+						<label for="selectDataSeries">data series</label>
+					</div>
+					<div class="select">
+						<select id="selectDataSeries" name="selectDataSeries" size="5"></select>
+					</div>
+				</div>
+				<div class="group leafGroup">
+					<div class="button">
+						<button type="button" onclick="alert('dummy');">create new</button>
+					</div>
+					<div class="button">
+						<button type="button" onclick="alert('dummy');">delete selected</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="group outerGroup">
+
+				<div class="group innerGroup">
+					<div class="group leafGroup">
+						<div class="label">
+							<label for"selectDataSet">data set</label>
+						</div>
+						<div class="select">
+							<select id="selectDataSet"></select>
+						</div>
+					</div>
+				</div>
+				<div class="group outerGroup">
+					<div class="group innerGroup">
+						<div class="group leafGroup">
+							<div class="label">
+								<label for="selectXAttribute">x attribute</label>
+							</div>
+							<div class="select">
+								<select id="selectXAttribute"></select>
+							</div>
+						</div>
+						<div class="group leafGroup">
+							<div class="label">
+								<label for="selectYAttribute">y attribute</label>
+							</div>
+							<div class="select">
+								<select id="selectYAttribute"></select>
+							</div>
+						</div>
+						<div class="group leafGroup">
+							<div class="label">
+								<label for="selectSortingAttribute">sorting attribute</label>
+							</div>
+							<div class="select">
+								<select id="selectSortingAttribute"></select>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
