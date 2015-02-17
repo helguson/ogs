@@ -9,6 +9,10 @@ their base data accessors to access present categories.
 		<meta charset="utf-8"></meta>
 		<title>Interaction Test</title>
 		<style>
+			body {
+				margin: 0px;
+			}
+
 			div.group {
 				display: table-cell;
 				padding: 0.5em;
@@ -32,14 +36,231 @@ their base data accessors to access present categories.
 			}
 		</style>
 		<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
+		<script type="text/javascript" src="./inheritance.js"></script>
+		<script type="text/javascript" src="./history.js"></script>
 		<script type="text/javascript">
 
+			//################
+			//### commands ###
+			//################
+			//#################################
+			//### ObjectSetAttributeCommand ###
+			//#################################
+			ObjectSetAttributeCommand = function(object, attributeIdentifier, newValue){
+
+				var instance = ObjectSetAttributeCommand.applyParentConstructorTo(this);
+
+				this._object = object;
+				this._attributeIdentifier = attributeIdentifier;
+				this._newValue = newValue;
+				this._oldValue = undefined;
+
+				return instance;
+			}
+			ObjectSetAttributeCommand.extend(historyPattern.AbstractCommand);
+
+			ObjectSetAttributeCommand.prototype._do = function(){
+
+				// look up
+				this._oldValue = this._object[this._attributeIdentifier];
+
+				// assign
+				this._object[this._attributeIdentifier] = this._newValue;
+			}
+
+			ObjectSetAttributeCommand.prototype._undo = function(){
+
+				// assign
+				this._object[this._attributeIdentifier] = this._oldValue;
+			}
+
+			//###############################
+			//### ArrayPushElementCommand ###
+			//###############################
+			ArrayPushElementCommand = function(array, element){
+
+				var instance = ArrayPushElementCommand.applyParentConstructorTo(this);
+
+				this._array = array;
+				this._element = element;
+
+				return instance;
+			}
+			ArrayPushElementCommand.extend(historyPattern.AbstractCommand);
+
+			ArrayPushElementCommand.prototype._do = function(){
+
+				this._array.push(this._element);
+			}
+
+			ArrayPushElementCommand.prototype._undo = function(){
+
+				this._array.pop();
+			}
+
+			//#################################
+			//### ArrayRemoveElementCommand ###
+			//#################################
+			ArrayRemoveElementCommand = function(array, index){
+
+				var instance = ArrayRemoveElementCommand.applyParentConstructorTo(this);
+
+				this._array = array;
+				this._index = index;
+				this._removedElement = undefined;
+
+				return instance;
+			}
+			ArrayRemoveElementCommand.extend(historyPattern.AbstractCommand);
+
+			ArrayRemoveElementCommand.prototype._do = function(){
+				//#######################
+				//### helper variable ###
+				//#######################
+				var elementsPastIndex = [];
+
+				//#######################
+				//### private methods ###
+				//#######################
+
+				// @param this - currentCommand
+				var hasValidIndex = function(){
+
+					return this._index >= 0 && this._index < this._array.length;
+				}
+
+				// @param this - currentCommand
+				var lastElementHasSpecifiedIndex = function(){
+
+					return this._array.length - 1 == this._index;
+				}
+
+				// @param this - currentCommand
+				var detachElementsPastIndex = function(){
+
+					while(!lastElementHasSpecifiedIndex.call(this)){
+						elementsPastIndex.unshift(this._array.pop());
+					}
+				}
+
+				// @param this - currentCommand
+				var attachDetachedElements = function(){
+
+					while(elementsPastIndex.length > 0){
+						this._array.push(elementsPastIndex.shift());
+					}
+				}
+
+				//############
+				//### main ###
+				//############
+
+				if(hasValidIndex.call(this)){
+
+					detachElementsPastIndex.call(this);
+					this._removedElement = this._array.pop();
+					attachDetachedElements.call(this);
+				}
+				else{
+					throw new Error("index out of bounds");
+				}
+			}
+
+			ArrayRemoveElementCommand.prototype._undo = function(){
+
+				//#######################
+				//### helper variable ###
+				//#######################
+				var elementsPastIndex = [];
+
+				//#######################
+				//### private methods ###
+				//#######################
+
+				// @param this - currentCommand
+				var pushingWouldResultOnSpecifiedIndex = function(){
+
+					return this._array.length == this._index;
+				}
+
+				// @param this - currentCommand
+				var detachElementsPastIndex = function(){
+
+					while(!pushingWouldResultOnSpecifiedIndex.call(this)){
+						elementsPastIndex.unshift(this._array.pop());
+					}
+				}
+
+				// @param this - currentCommand
+				var attachDetachedElements = function(){
+
+					while(elementsPastIndex.length > 0){
+						this._array.push(elementsPastIndex.shift());
+					}
+				}
+
+				//############
+				//### main ###
+				//############
+
+				detachElementsPastIndex.call(this);
+				this._array.push(this._removedElement);
+				attachDetachedElements.call(this);
+			}
+
+			//#################
+			//### variables ###
+			//#################
+			/**
+			 * dataSetList = [
+			 * 	{name: "data set 01", accessor: accessor01},
+			 * 	{name: "data set 02", accessor: accessor02},
+			 * 	...
+			 * 	{name: "data set N", accessor: accessorN}
+			 * ]
+			 */
+			var dataSetList = [];
+
+			/**
+			 * seriesList = [
+			 * 	{
+			 * 		name: "series 01",
+			 * 		dataSetIndex: 0,
+			 * 		xAttribute: "temperature",
+			 * 		yAttribute: "humidity",
+			 * 		seriesAttribute: "date_of_measurement"
+			 * 	},
+			 * 	...
+			 * ]
+			 */
+			var seriesList = []
+
+			//###############
+			//### methods ###
+			//###############
 			function onLoad(){
 
-				var f = function(d){
-					return d;
-				};
+				setUp(
+					[
+						{name: "data set 00", accessor: undefined},
+						{name: "data set 01", accessor: undefined},
+						{name: "data set 02", accessor: undefined},
+						{name: "data set 02", accessor: undefined}
+					]
+				);
+			}
 
+			function setUp(dataSetList){
+				dataSetList = dataSetList;
+			}
+
+			function createNewSeries(){
+
+
+			}
+
+
+			function unknown(){
 				d3.select("#selectDataSeries")
 					.selectAll("option").data(["series01", "series02"])
 					.enter().append("option")
@@ -132,4 +353,7 @@ their base data accessors to access present categories.
 			</div>
 		</div>
 	</body>
+	<div class="button">
+		<button type="button" onclick="alert('dummy');">apply</button>
+	</div>
 </html>
