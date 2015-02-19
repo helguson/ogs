@@ -17,6 +17,10 @@
 						TODO: What is the reason?
 						*/
 			}
+			iframe {
+				min-width: 750px;
+				min-height: 330px;
+			}
 			/*svg {
 				width: 100%;
 				height: 100%;
@@ -30,6 +34,7 @@
 			var GATE_ANNOUNCEMENT_NAME = "gate";
 
 			var dataSets = [];
+			var transferredDataSetCounter = 0;
 
 			function onLoad(){
 
@@ -52,9 +57,14 @@
 
 				//	window.testCanvas = new infovis.LineDiagram("#viz");
 				}
+
+				var iframe = document.getElementById("parameterArea");
+				iframe.contentWindow.onApply = onApplySeries;
 			}
 
 			function onTransferredData(values, metaDataRelation, baseDataIndices){
+
+				transferredDataSetCounter++;
 
 				var accessorFactory = new infovis.DataAccessorFactory(values, metaDataRelation);
 				var baseDataAccessor = accessorFactory.makeAccessorFrom(baseDataIndices);
@@ -69,13 +79,28 @@
 					}
 				);
 
+				// add to iframe
+				var iframe = document.getElementById("parameterArea");
+				iframe.contentWindow.dataSetManager.addDataSet(
+					baseDataAccessor,
+					"dataSet"+transferredDataSetCounter.toString()
+				);
+
 			}
+
+			function onApplySeries(series){
+
+				console.log("hello");
+				console.log(series);
+			}
+
 
 		</script>
 	</head>
 	<body onload="onLoad()">
 		<div id="viz">
 				<p id="javaScriptNotAvailableDummy">JavaScript was not available</p>
+				<iframe name="parameterArea" id="parameterArea" scrolling="no" src="Interaction Test.html">there should be a diagram area</iframe>
 		</div>
 	</body>
 </html>

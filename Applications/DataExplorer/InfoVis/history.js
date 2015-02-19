@@ -98,3 +98,35 @@ historyPattern.AbstractCommand.prototype._do = function(){
 historyPattern.AbstractCommand.prototype._undo = function(){
 	throw new Error("this method is abstract");
 }
+
+//######################
+//### CompoundCommand ###
+//######################
+historyPattern.CompoundCommand = function(){
+
+	var instance = historyPattern.CompoundCommand.applyParentConstructorTo(this);
+
+	this._commands = [];
+
+	return instance;
+}
+historyPattern.CompoundCommand.extend(historyPattern.AbstractCommand);
+
+historyPattern.CompoundCommand.prototype._do = function(){
+
+	for(var index = 0; index < this._commands.length; index++){
+		this._commands[index].do();
+	}
+}
+
+historyPattern.CompoundCommand.prototype._undo = function(){
+
+	for(var index = this._commands.length-1; index >= 0; index--){
+		this._commands[index].undo();
+	}
+}
+
+historyPattern.CompoundCommand.prototype.add = function(command){
+
+	this._commands.push(command);
+}

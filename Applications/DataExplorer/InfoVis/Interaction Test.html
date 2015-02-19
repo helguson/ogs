@@ -34,6 +34,10 @@ their base data accessors to access present categories.
 				margin-bottom: 0.25em;
 				border: 1px solid rgba(0, 0, 0, 0.05);
 			}
+
+			select{
+				width: 200px;
+			}
 		</style>
 		<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
 		<script type="text/javascript" src="./inheritance.js"></script>
@@ -208,50 +212,90 @@ their base data accessors to access present categories.
 				attachDetachedElements.call(this);
 			}
 
-			//##############
-			//### series ###
-			//##############
+			//#################
+			//### variables ###
+			//#################
+
+			var onApply = function(series){
+				console.log("replace me");
+				console.log(series);
+			};
+
 			SeriesSelection = function(){
 
 				this.name = "";
 				this.dataSetIndex = 0;
-				this.xAttributeIndex = 0;
-				this.yAttributeIndex = 0;
-				this.sortingAttribute = 0;
+				this.xAttributeOptionIndex = 0;
+				this.xAttributeColumnIndex = 0;
+				this.yAttributeOptionIndex = 0;
+				this.xAttributeColumnIndex = 0;
+				this.sortingAttributeOptionIndex = 0;
+				this.sortingAttributeColumnIndex = 0;
 			}
 
-			//#################
-			//### variables ###
-			//#################
 			/**
-			 * dataSetList = [
+			 * [
 			 * 	{name: "data set 01", accessor: accessor01},
 			 * 	{name: "data set 02", accessor: accessor02},
 			 * 	...
 			 * 	{name: "data set N", accessor: accessorN}
 			 * ]
 			 */
-			var dataSetList = [];
+			var dataSetManager = {
+				count: 0,
+				managedDataSets: [],
+				categories: [],
+				addDataSet: function(baseDataAccessor, name){
 
-			/**
-			 * seriesList = [
-			 * 	{
-			 * 		name: "series 01",
-			 * 		dataSetIndex: 0,
-			 * 		xAttribute: "temperature",
-			 * 		yAttribute: "humidity",
-			 * 		sortingAttribute: "date_of_measurement"
-			 * 	},
-			 * 	...
-			 * ]
-			 */
-			var seriesList = [];
+					this.count++;
 
+					name = (typeof(name)=="string")? name : "data set " + this.count.toString();
+
+					this.managedDataSets.push(
+						{
+							name: name,
+							accessor: baseDataAccessor
+						}
+					);
+
+					// extract categories
+					this.categories.push(
+						baseDataAccessor.at(0).meta("column").meta("column_element_name").access()
+					);
+				}
+			}
+
+			var seriesManager = {
+				createCount:  0,
+				managedItems: [],
+				createNewSeries: function(name){
+
+					this.createCount++;
+
+					var series = new SeriesSelection();
+					series.name = (typeof(name)=="string")? name : "series" + this.createCount.toString();
+					this.managedItems.push(series);
+
+					return series;
+				},
+				deleteItemAt: function(index){
+					this.managedItems = this.managedItems
+						.slice(0,index)
+						.concat(
+							this.managedItems.slice(index+1)
+						);
+				}
+			}
 
 			//###############
 			//### methods ###
 			//###############
 			function onLoad(){
+
+				//setUpDummy();
+			}
+
+			function setUpDummy(){
 
 				var dummyAccessor = {
 					at: function(){ return this; },
@@ -269,32 +313,53 @@ their base data accessors to access present categories.
 				);
 			}
 
-			function setUp(_dataSetList){
+			function setUp(dataSetList){
 
-				dataSetList = _dataSetList;
+				dataSetList.forEach(
+					function(dataSet){
+
+						dataSetManager.addDataSet(
+							dataSet.accessor,
+							dataSet.name
+						);
+					}
+				)
 			}
 
-			var nextSeriesIndex = 0;
+			function wasCalledManually(event){
+
+				result = true;
+
+				if(event.detail != undefined){
+					if(event.detail.calledAutomatically == true){
+						result = false;
+					}
+				}
+
+				return result;
+			}
+
+			function setSelectedElement(selectIdentifier, index){
+
+				var DOMSelect = d3.select(selectIdentifier)[0][0];
+				DOMSelect.selectedIndex = index;
+				DOMSelect.dispatchEvent(new CustomEvent("change", { detail: {calledAutomatically: true} }));
+			}
+
 			function createNewSeries(){
 
-				// create list entry
-				var series = new SeriesSelection();
-				series.name = "series" + nextSeriesIndex.toString();
-				nextSeriesIndex++;
-				seriesList.push(series);
+				seriesManager.createNewSeries();
 
 				// update
 				updateSelectDataSeries();
 
 				// select new element
-				var DOMSelect = d3.select("#selectDataSeries")[0][0];
-				DOMSelect.selectedIndex = seriesList.length-1;
-				DOMSelect.dispatchEvent(new CustomEvent("change", { detail: {notCalledManually: true} }));
+				setSelectedElement("#selectDataSeries", seriesManager.managedItems.length-1);
 			}
 
 			function updateSelectDataSeries(){
 
-				var select = d3.select("#selectDataSeries").selectAll("option").data(seriesList);
+				var select = d3.select("#selectDataSeries").selectAll("option").data(seriesManager.managedItems);
 
 				select.enter()
 					.append("option");
@@ -351,7 +416,7 @@ their base data accessors to access present categories.
 				var series = getCurrentSeries();
 
 				var select = d3.select("#selectDataSet");
-				var options = select.selectAll("option").data(dataSetList);
+				var options = select.selectAll("option").data(dataSetManager.managedDataSets);
 
 				options.enter()
 					.append("option");
@@ -367,24 +432,27 @@ their base data accessors to access present categories.
 						}
 					);
 
-				// select entry
-				var DOMSelect = select[0][0];
-				DOMSelect.selectedIndex = series.dataSetIndex;
-				DOMSelect.dispatchEvent(new CustomEvent("change", { detail: {notCalledManually: true} }));
+				setSelectedElement("#selectDataSet", series.dataSetIndex);
 			}
 
-			function selectSeries(index){
+			function deleteCurrentSelectedSeries(){
 
-				// if index == -1 or other non existing index
-					// deselect series
-					// disable attribute selecting CustomEvents
-					// clear attribute <select> areas
-						// d3.select("#seriesAttributeArea").selectAll("option").remove();
-				// else
-					// select series accordingly
-					// fill dataSetSelect
-					// select dataSetAccording to series
-					// fill attribute areas
+				var currentSelectedIndex = document.getElementById("selectDataSeries").selectedIndex;
+
+				// assert: execution before removing element
+				var nextSelectedIndex = currentSelectedIndex;
+				if(currentSelectedIndex == seriesManager.managedItems.length-1){
+					nextSelectedIndex--;
+				}
+
+				// remove element
+				seriesManager.deleteItemAt(currentSelectedIndex);
+
+				// update
+				updateSelectDataSeries();
+
+				// set selection
+				setSelectedElement("#selectDataSeries", nextSelectedIndex);
 			}
 
 			// @param this - <select>
@@ -396,30 +464,37 @@ their base data accessors to access present categories.
 
 
 				// set default attributes on manual change
-				var calledManually = !(e.detail.notCalledManually == true);
-				if(calledManually){
+				if(wasCalledManually(e)){
 
-					series.xAttributeIndex = 0;
-					series.yAttributeIndex = 0;
-					series.sortingAttributeIndex = 0;
+					series.xAttributeOptionIndex = 0;
+					series.yAttributeOptionIndex = 0;
+					series.sortingAttributeOptionIndex = 0;
 				}
 
 				// setUp attribute area
-				updateSelectXAttribute();
-				updateSelectYAttribute();
-				updateSelectSortingAttribute();
-
+				updateSelectAttribute("selectXAttribute", "xAttributeOptionIndex");
+				updateSelectAttribute("selectYAttribute", "yAttributeOptionIndex");
+				updateSelectAttribute("selectSortingAttribute", "sortingAttributeOptionIndex");
 			}
 
-			function updateSelectXAttribute(){
+
+
+			function updateSelectAttribute(selectID, seriesAttributeIdentifierForSelectedOption){
 
 				var series = getCurrentSeries();
-				var dataSet = getCurrentDataSet();
+				var categories = dataSetManager.categories[series.dataSetIndex];
 
-				var categories = dataSet.accessor.at(0).meta("column").meta("column_element_name").access();
+				var categoryData = categories.map(
+					function(category, index){
+						return {
+							name: category,
+							index: index
+						};
+					}
+				);
 
-				var select = d3.select("#selectXAttribute");
-				var options = select.selectAll("option").data(categories);
+				var select = d3.select("#" + selectID);
+				var options = select.selectAll("option").data(categoryData);
 
 				options.enter()
 					.append("option");
@@ -430,101 +505,73 @@ their base data accessors to access present categories.
 				// update
 				options
 					.text(
-						function(category){
-							return category;
+						function(date){
+							return date.name;
 						}
 					);
 
 				// select entry
-				var DOMSelect = select[0][0];
-				DOMSelect.selectedIndex = series.xAttributeIndex;
-				DOMSelect.dispatchEvent(new CustomEvent("change", { detail: {notCalledManually: true} }));
+				setSelectedElement(
+					"#"+selectID,
+					series[seriesAttributeIdentifierForSelectedOption]
+				);
 			}
-
-			function updateSelectYAttribute(){
-
-				var series = getCurrentSeries();
-				var dataSet = getCurrentDataSet();
-
-				var categories = dataSet.accessor.at(0).meta("column").meta("column_element_name").access();
-
-				var select = d3.select("#selectYAttribute");
-				var options = select.selectAll("option").data(categories);
-
-				options.enter()
-					.append("option");
-
-				options.exit()
-					.remove();
-
-				// update
-				options
-					.text(
-						function(category){
-							return category;
-						}
-					);
-
-				// select entry
-				var DOMSelect = select[0][0];
-				DOMSelect.selectedIndex = series.yAttributeIndex;
-				DOMSelect.dispatchEvent(new CustomEvent("change", { detail: {notCalledManually: true} }));
-			}
-
-			function updateSelectSortingAttribute(){
-
-				var series = getCurrentSeries();
-				var dataSet = getCurrentDataSet();
-
-				var categories = dataSet.accessor.at(0).meta("column").meta("column_element_name").access();
-
-				var select = d3.select("#selectSortingAttribute");
-				var options = select.selectAll("option").data(categories);
-
-				options.enter()
-					.append("option");
-
-				options.exit()
-					.remove();
-
-				// update
-				options
-					.text(
-						function(category){
-							return category;
-						}
-					);
-
-				// select entry
-				var DOMSelect = select[0][0];
-				DOMSelect.selectedIndex = series.sortingAttributeIndex;
-				DOMSelect.dispatchEvent(new CustomEvent("change", { detail: {notCalledManually: true} }));
-			}
-
 
 
 			// @param this - <select>
-			function selectXAttribute(){
+			function selectXAttribute(e){
 
 				var series = getCurrentSeries();
 
-				series.xAttributeIndex = this.selectedIndex;
+				series.xAttributeOptionIndex = this.selectedIndex;
+
+				var option = this[this.selectedIndex];
+				series.xAttributeColumnIndex = option.__data__.index;
 			}
 
 			// @param this - <select>
-			function selectYAttribute(){
+			function selectYAttribute(e){
 
 				var series = getCurrentSeries();
 
-				series.yAttributeIndex = this.selectedIndex;
+				series.yAttributeOptionIndex = this.selectedIndex;
+
+				var option = this[this.selectedIndex];
+				series.yAttributeColumnIndex = option.__data__.index;
 			}
 
 			// @param this - <select>
-			function selectSortingAttribute(){
+			function selectSortingAttribute(e){
 
 				var series = getCurrentSeries();
 
-				series.sortingAttributeIndex = this.selectedIndex;
+				series.sortingAttributeOptionIndex = this.selectedIndex;
+
+				var option = this[this.selectedIndex];
+				series.sortingAttributeColumnIndex = option.__data__.index;
+			}
+
+			function onApplyClick(){
+
+				// assemble series
+				var series = seriesManager.managedItems.map(
+					function(seriesSelection){
+
+						var categories = dataSetManager.categories[seriesSelection.dataSetIndex];
+
+						return {
+							name: seriesSelection.name,
+							baseDataAccessor: dataSetManager.managedDataSets[seriesSelection.dataSetIndex].accessor,
+							xAttribute: categories[seriesSelection.xAttributeColumnIndex],
+							yAttribute: categories[seriesSelection.yAttributeColumnIndex],
+							sortingAttribute: categories[seriesSelection.sortingAttributeColumnIndex]
+						};
+					}
+				);
+
+
+				// dispatch processing
+				onApply.call(undefined, series);
 			}
 
 		</script>
@@ -545,7 +592,7 @@ their base data accessors to access present categories.
 						<button type="button" onclick="createNewSeries();">create new</button>
 					</div>
 					<div class="button">
-						<button type="button" onclick="alert('dummy');">delete selected</button>
+						<button type="button" onclick="deleteCurrentSelectedSeries();">delete selected</button>
 					</div>
 				</div>
 			</div>
@@ -594,6 +641,6 @@ their base data accessors to access present categories.
 		</div>
 	</body>
 	<div class="button">
-		<button type="button" onclick="alert('dummy');">apply</button>
+		<button type="button" onclick="onApplyClick();">apply</button>
 	</div>
 </html>
