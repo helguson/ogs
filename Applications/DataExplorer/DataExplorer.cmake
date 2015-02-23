@@ -91,6 +91,7 @@ target_link_libraries(DataExplorer
 	${CATALYST_LIBRARIES}
 	zlib
 	shp
+	InfoVis
 )
 
 if(VTK_NETCDF_FOUND)

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8"></meta>
+		<title>D3Test</title>
+		<style>
+			svg {
+				background-color: beige;
+			}
+			html{
+				height: 100%;
+			}
+			body {
+				height: 95%;	/*
+						this is an emperical value, that fills the page
+						almost completely and avoids scroll bars. (QTWebview)
+						TODO: What is the reason?
+						*/
+			}
+			iframe {
+				min-width: 750px;
+				min-height: 330px;
+			}
+			/*svg {
+				width: 100%;
+				height: 100%;
+			}*/
+		</style>
+		<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
+		<script type="text/javascript" src="./inheritance.js"></script>
+		<script type="text/javascript" src="./infovis.js"></script>
+		<script type="text/javascript">
+
+			var GATE_ANNOUNCEMENT_NAME = "gate";
+
+			var dataSets = [];
+			var transferredDataSetCounter = 0;
+
+			function onLoad(){
+
+				removeMessageOfUnavailabilityOfJavaScript();
+
+				var gate = window[GATE_ANNOUNCEMENT_NAME];
+				if(gate != undefined){
+
+					// connect slots
+					gate.transferredData.connect(onTransferredData);
+
+					gate.transferEveryStored();
+				}
+				else{
+
+					console.warn("'gate' is not present");
+				}
+
+				if(isD3Available()){
+
+				//	window.testCanvas = new infovis.LineDiagram("#viz");
+				}
+
+				var iframe = document.getElementById("parameterArea");
+				iframe.contentWindow.onApply = onApplySeries;
+			}
+
+			function onTransferredData(values, metaDataRelation, baseDataIndices){
+
+				transferredDataSetCounter++;
+
+				var accessorFactory = new infovis.DataAccessorFactory(values, metaDataRelation);
+				var baseDataAccessor = accessorFactory.makeAccessorFrom(baseDataIndices);
+
+				dataSets.push(
+					{
+						values: values,
+						metaDataRelation: metaDataRelation,
+						baseDataIndices: baseDataIndices,
+						accessorFactory: accessorFactory,
+						baseDataAccessor: baseDataAccessor
+					}
+				);
+
+				// add to iframe
+				var iframe = document.getElementById("parameterArea");
+				iframe.contentWindow.dataSetManager.addDataSet(
+					baseDataAccessor,
+					"dataSet"+transferredDataSetCounter.toString()
+				);
+
+			}
+
+			function onApplySeries(series){
+
+				console.log("hello");
+				console.log(series);
+			}
+
+
+		</script>
+	</head>
+	<body onload="onLoad()">
+		<div id="viz">
+				<p id="javaScriptNotAvailableDummy">JavaScript was not available</p>
+				<iframe name="parameterArea" id="parameterArea" scrolling="no" src="Interaction Test.html">there should be a diagram area</iframe>
+		</div>
+	</body>
+</html>

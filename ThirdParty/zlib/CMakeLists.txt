@@ -32,7 +32,7 @@ check_include_file(unistd.h Z_HAVE_UNISTD_H)
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
     add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+    include_directories(zlib ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 if(NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
@@ -52,7 +52,6 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/zlib.pc.cmakein
 		${ZLIB_PC} @ONLY)
 configure_file(	${CMAKE_CURRENT_SOURCE_DIR}/zconf.h.cmakein
 		${CMAKE_CURRENT_BINARY_DIR}/zconf.h @ONLY)
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_SOURCE_DIR})
 
 
 #============================================================================
@@ -109,6 +108,9 @@ add_library(zlib STATIC ${ZLIB_SRCS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
 if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
     set_target_properties(zlib PROPERTIES STATIC_LIBRARY_FLAGS "/machine:x64")
 endif()
+
+# BEFORE fixes compiling when there is also a system installed zlib
+target_include_directories(zlib BEFORE PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_SOURCE_DIR})
 
 #============================================================================
 # Example binaries

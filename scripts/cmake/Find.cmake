@@ -82,7 +82,7 @@ find_package(Metis QUIET)
 
 ## Qt4 library ##
 if(NOT OGS_DONT_USE_QT)
-	find_package( Qt4 4.7)
+	find_package( Qt4 4.7 COMPONENTS QtCore QtGui QtXml QtXmlPatterns QtOpenGL QtWebKit)
 endif()
 
 if(QT4_FOUND)

@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<!--
+This document serves as a draft to the functionality to set up interactively the
+parameters of diagrams. It will be initialized using the present data sets using
+their base data accessors to access present categories.
+-->
+<html>
+	<head>
+		<meta charset="utf-8"></meta>
+		<title>Interaction Test</title>
+		<style>
+			body {
+				margin: 0px;
+			}
+
+			div.group {
+				display: table-cell;
+				padding: 0.5em;
+				background-color: beige;
+			}
+
+			div.outerGroup {
+				padding-top: 0.5em;
+				padding-bottom: 0.5em;
+				border: 1px solid black;
+			}
+
+			div.innerGroup {
+			}
+
+			div.leafGroup {
+				display: block;
+				padding: 0.25em;
+				margin-bottom: 0.25em;
+				border: 1px solid rgba(0, 0, 0, 0.05);
+			}
+
+			select{
+				width: 200px;
+			}
+		</style>
+		<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
+		<script type="text/javascript" src="./inheritance.js"></script>
+		<script type="text/javascript" src="./history.js"></script>
+		<script type="text/javascript">
+
+			//################
+			//### commands ###
+			//################
+			//#################################
+			//### ObjectSetAttributeCommand ###
+			//#################################
+			ObjectSetAttributeCommand = function(object, attributeIdentifier, newValue){
+
+				var instance = ObjectSetAttributeCommand.applyParentConstructorTo(this);
+
+				this._object = object;
+				this._attributeIdentifier = attributeIdentifier;
+				this._newValue = newValue;
+				this._oldValue = undefined;
+
+				return instance;
+			}
+			ObjectSetAttributeCommand.extend(historyPattern.AbstractCommand);
+
+			ObjectSetAttributeCommand.prototype._do = function(){
+
+				// look up
+				this._oldValue = this._object[this._attributeIdentifier];
+
+				// assign
+				this._object[this._attributeIdentifier] = this._newValue;
+			}
+
+			ObjectSetAttributeCommand.prototype._undo = function(){
+
+				// assign
+				this._object[this._attributeIdentifier] = this._oldValue;
+			}
+
+			//###############################
+			//### ArrayPushElementCommand ###
+			//###############################
+			ArrayPushElementCommand = function(array, element){
+
+				var instance = ArrayPushElementCommand.applyParentConstructorTo(this);
+
+				this._array = array;
+				this._element = element;
+
+				return instance;
+			}
+			ArrayPushElementCommand.extend(historyPattern.AbstractCommand);
+
+			ArrayPushElementCommand.prototype._do = function(){
+
+				this._array.push(this._element);
+			}
+
+			ArrayPushElementCommand.prototype._undo = function(){
+
+				this._array.pop();
+			}
+
+			//#################################
+			//### ArrayRemoveElementCommand ###
+			//#################################
+			ArrayRemoveElementCommand = function(array, index){
+
+				var instance = ArrayRemoveElementCommand.applyParentConstructorTo(this);
+
+				this._array = array;
+				this._index = index;
+				this._removedElement = undefined;
+
+				return instance;
+			}
+			ArrayRemoveElementCommand.extend(historyPattern.AbstractCommand);
+
+			ArrayRemoveElementCommand.prototype._do = function(){
+				//#######################
+				//### helper variable ###
+				//#######################
+				var elementsPastIndex = [];
+
+				//#######################
+				//### private methods ###
+				//#######################
+
+				// @param this - currentCommand
+				var hasValidIndex = function(){
+
+					return this._index >= 0 && this._index < this._array.length;
+				}
+
+				// @param this - currentCommand
+				var lastElementHasSpecifiedIndex = function(){
+
+					return this._array.length - 1 == this._index;
+				}
+
+				// @param this - currentCommand
+				var detachElementsPastIndex = function(){
+
+					while(!lastElementHasSpecifiedIndex.call(this)){
+						elementsPastIndex.unshift(this._array.pop());
+					}
+				}
+
+				// @param this - currentCommand
+				var attachDetachedElements = function(){
+
+					while(elementsPastIndex.length > 0){
+						this._array.push(elementsPastIndex.shift());
+					}
+				}
+
+				//############
+				//### main ###
+				//############
+
+				if(hasValidIndex.call(this)){
+
+					detachElementsPastIndex.call(this);
+					this._removedElement = this._array.pop();
+					attachDetachedElements.call(this);
+				}
+				else{
+					throw new Error("index out of bounds");
+				}
+			}
+
+			ArrayRemoveElementCommand.prototype._undo = function(){
+
+				//#######################
+				//### helper variable ###
+				//#######################
+				var elementsPastIndex = [];
+
+				//#######################
+				//### private methods ###
+				//#######################
+
+				// @param this - currentCommand
+				var pushingWouldResultOnSpecifiedIndex = function(){
+
+					return this._array.length == this._index;
+				}
+
+				// @param this - currentCommand
+				var detachElementsPastIndex = function(){
+
+					while(!pushingWouldResultOnSpecifiedIndex.call(this)){
+						elementsPastIndex.unshift(this._array.pop());
+					}
+				}
+
+				// @param this - currentCommand
+				var attachDetachedElements = function(){
+
+					while(elementsPastIndex.length > 0){
+						this._array.push(elementsPastIndex.shift());
+					}
+				}
+
+				//############
+				//### main ###
+				//############
+
+				detachElementsPastIndex.call(this);
+				this._array.push(this._removedElement);
+				attachDetachedElements.call(this);
+			}
+
+			//#################
+			//### variables ###
+			//#################
+
+			var onApply = function(series){
+				console.log("replace me");
+				console.log(series);
+			};
+
+			SeriesSelection = function(){
+
+				this.name = "";
+				this.dataSetIndex = 0;
+				this.xAttributeOptionIndex = 0;
+				this.xAttributeColumnIndex = 0;
+				this.yAttributeOptionIndex = 0;
+				this.xAttributeColumnIndex = 0;
+				this.sortingAttributeOptionIndex = 0;
+				this.sortingAttributeColumnIndex = 0;
+			}
+
+			/**
+			 * [
+			 * 	{name: "data set 01", accessor: accessor01},
+			 * 	{name: "data set 02", accessor: accessor02},
+			 * 	...
+			 * 	{name: "data set N", accessor: accessorN}
+			 * ]
+			 */
+			var dataSetManager = {
+				count: 0,
+				managedDataSets: [],
+				categories: [],
+				addDataSet: function(baseDataAccessor, name){
+
+					this.count++;
+
+					name = (typeof(name)=="string")? name : "data set " + this.count.toString();
+
+					this.managedDataSets.push(
+						{
+							name: name,
+							accessor: baseDataAccessor
+						}
+					);
+
+					// extract categories
+					this.categories.push(
+						baseDataAccessor.at(0).meta("column").meta("column_element_name").access()
+					);
+				}
+			}
+
+			var seriesManager = {
+				createCount:  0,
+				managedItems: [],
+				createNewSeries: function(name){
+
+					this.createCount++;
+
+					var series = new SeriesSelection();
+					series.name = (typeof(name)=="string")? name : "series" + this.createCount.toString();
+					this.managedItems.push(series);
+
+					return series;
+				},
+				deleteItemAt: function(index){
+					this.managedItems = this.managedItems
+						.slice(0,index)
+						.concat(
+							this.managedItems.slice(index+1)
+						);
+				}
+			}
+
+			//###############
+			//### methods ###
+			//###############
+			function onLoad(){
+
+				//setUpDummy();
+			}
+
+			function setUpDummy(){
+
+				var dummyAccessor = {
+					at: function(){ return this; },
+					meta: function(){ return this; },
+					access: function(){ return ["date_of_measurement", "temperature", "humidity", "brightness"]; }
+				};
+
+				setUp(
+					[
+						{name: "data set 00", accessor: dummyAccessor},
+						{name: "data set 01", accessor: dummyAccessor},
+						{name: "data set 02", accessor: dummyAccessor},
+						{name: "data set 03", accessor: dummyAccessor}
+					]
+				);
+			}
+
+			function setUp(dataSetList){
+
+				dataSetList.forEach(
+					function(dataSet){
+
+						dataSetManager.addDataSet(
+							dataSet.accessor,
+							dataSet.name
+						);
+					}
+				)
+			}
+
+			function wasCalledManually(event){
+
+				result = true;
+
+				if(event.detail != undefined){
+					if(event.detail.calledAutomatically == true){
+						result = false;
+					}
+				}
+
+				return result;
+			}
+
+			function setSelectedElement(selectIdentifier, index){
+
+				var DOMSelect = d3.select(selectIdentifier)[0][0];
+				DOMSelect.selectedIndex = index;
+				DOMSelect.dispatchEvent(new CustomEvent("change", { detail: {calledAutomatically: true} }));
+			}
+
+			function createNewSeries(){
+
+				seriesManager.createNewSeries();
+
+				// update
+				updateSelectDataSeries();
+
+				// select new element
+				setSelectedElement("#selectDataSeries", seriesManager.managedItems.length-1);
+			}
+
+			function updateSelectDataSeries(){
+
+				var select = d3.select("#selectDataSeries").selectAll("option").data(seriesManager.managedItems);
+
+				select.enter()
+					.append("option");
+
+				select.exit()
+					.remove();
+
+				// update
+				select
+					.text(
+						function(s){
+							return s.name;
+						}
+					);
+			}
+
+			// @param this - <select>
+			function onChangeSelectDataSeries(){
+				var self = this;
+
+				var isValidOptionIndex = function(index){
+					return (index >= 0) && (index < self.length);
+				}
+
+				//### main ###
+				if(isValidOptionIndex(this.selectedIndex)){
+
+					updateSelectDataSet();
+				}
+				else{
+					d3.select("#seriesAttributeArea").selectAll("option")
+						.remove();
+				}
+
+
+			}
+
+			function getCurrentSeries(){
+
+				var DOMSelect = d3.select("#selectDataSeries")[0][0];
+
+				return DOMSelect[DOMSelect.selectedIndex].__data__;
+			}
+
+			function getCurrentDataSet(){
+
+				var DOMSelect = d3.select("#selectDataSet")[0][0];
+
+				return DOMSelect[DOMSelect.selectedIndex].__data__;
+			}
+
+			function updateSelectDataSet(){
+
+				var series = getCurrentSeries();
+
+				var select = d3.select("#selectDataSet");
+				var options = select.selectAll("option").data(dataSetManager.managedDataSets);
+
+				options.enter()
+					.append("option");
+
+				options.exit()
+					.remove();
+
+				// update
+				options
+					.text(
+						function(dataSet){
+							return dataSet.name;
+						}
+					);
+
+				setSelectedElement("#selectDataSet", series.dataSetIndex);
+			}
+
+			function deleteCurrentSelectedSeries(){
+
+				var currentSelectedIndex = document.getElementById("selectDataSeries").selectedIndex;
+
+				// assert: execution before removing element
+				var nextSelectedIndex = currentSelectedIndex;
+				if(currentSelectedIndex == seriesManager.managedItems.length-1){
+					nextSelectedIndex--;
+				}
+
+				// remove element
+				seriesManager.deleteItemAt(currentSelectedIndex);
+
+				// update
+				updateSelectDataSeries();
+
+				// set selection
+				setSelectedElement("#selectDataSeries", nextSelectedIndex);
+			}
+
+			// @param this - <select>
+			function selectDataSet(e){
+
+				// set attribute of series
+				var series = getCurrentSeries();
+				series.dataSetIndex = this.selectedIndex;
+
+
+				// set default attributes on manual change
+				if(wasCalledManually(e)){
+
+					series.xAttributeOptionIndex = 0;
+					series.yAttributeOptionIndex = 0;
+					series.sortingAttributeOptionIndex = 0;
+				}
+
+				// setUp attribute area
+				updateSelectAttribute("selectXAttribute", "xAttributeOptionIndex");
+				updateSelectAttribute("selectYAttribute", "yAttributeOptionIndex");
+				updateSelectAttribute("selectSortingAttribute", "sortingAttributeOptionIndex");
+			}
+
+
+
+			function updateSelectAttribute(selectID, seriesAttributeIdentifierForSelectedOption){
+
+				var series = getCurrentSeries();
+				var categories = dataSetManager.categories[series.dataSetIndex];
+
+				var categoryData = categories.map(
+					function(category, index){
+						return {
+							name: category,
+							index: index
+						};
+					}
+				);
+
+				var select = d3.select("#" + selectID);
+				var options = select.selectAll("option").data(categoryData);
+
+				options.enter()
+					.append("option");
+
+				options.exit()
+					.remove();
+
+				// update
+				options
+					.text(
+						function(date){
+							return date.name;
+						}
+					);
+
+				// select entry
+				setSelectedElement(
+					"#"+selectID,
+					series[seriesAttributeIdentifierForSelectedOption]
+				);
+			}
+
+
+			// @param this - <select>
+			function selectXAttribute(e){
+
+				var series = getCurrentSeries();
+
+				series.xAttributeOptionIndex = this.selectedIndex;
+
+				var option = this[this.selectedIndex];
+				series.xAttributeColumnIndex = option.__data__.index;
+			}
+
+			// @param this - <select>
+			function selectYAttribute(e){
+
+				var series = getCurrentSeries();
+
+				series.yAttributeOptionIndex = this.selectedIndex;
+
+				var option = this[this.selectedIndex];
+				series.yAttributeColumnIndex = option.__data__.index;
+			}
+
+			// @param this - <select>
+			function selectSortingAttribute(e){
+
+				var series = getCurrentSeries();
+
+				series.sortingAttributeOptionIndex = this.selectedIndex;
+
+				var option = this[this.selectedIndex];
+				series.sortingAttributeColumnIndex = option.__data__.index;
+			}
+
+			function onApplyClick(){
+
+				// assemble series
+				var series = seriesManager.managedItems.map(
+					function(seriesSelection){
+
+						var categories = dataSetManager.categories[seriesSelection.dataSetIndex];
+
+						return {
+							name: seriesSelection.name,
+							baseDataAccessor: dataSetManager.managedDataSets[seriesSelection.dataSetIndex].accessor,
+							xAttribute: categories[seriesSelection.xAttributeColumnIndex],
+							yAttribute: categories[seriesSelection.yAttributeColumnIndex],
+							sortingAttribute: categories[seriesSelection.sortingAttributeColumnIndex]
+						};
+					}
+				);
+
+
+				// dispatch processing
+				onApply.call(undefined, series);
+			}
+
+		</script>
+	</head>
+	<body onload="onLoad()">
+		<div class="group outerGroup">
+			<div class="group innerGroup" id="seriesArea" >
+				<div class="group leafGroup">
+					<div class="label">
+						<label for="selectDataSeries">data series</label>
+					</div>
+					<div class="select">
+						<select id="selectDataSeries" name="selectDataSeries" size="5" onchange="onChangeSelectDataSeries.apply(this,arguments);" ></select>
+					</div>
+				</div>
+				<div class="group leafGroup">
+					<div class="button">
+						<button type="button" onclick="createNewSeries();">create new</button>
+					</div>
+					<div class="button">
+						<button type="button" onclick="deleteCurrentSelectedSeries();">delete selected</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="group outerGroup" id="seriesAttributeArea" >
+
+				<div class="group innerGroup">
+					<div class="group leafGroup">
+						<div class="label">
+							<label for"selectDataSet">data set</label>
+						</div>
+						<div class="select">
+							<select id="selectDataSet" onchange="selectDataSet.apply(this, arguments);" ></select>
+						</div>
+					</div>
+				</div>
+				<div class="group outerGroup">
+					<div class="group innerGroup">
+						<div class="group leafGroup">
+							<div class="label">
+								<label for="selectXAttribute">x attribute</label>
+							</div>
+							<div class="select">
+								<select id="selectXAttribute" onchange="selectXAttribute.apply(this, arguments);" ></select>
+							</div>
+						</div>
+						<div class="group leafGroup">
+							<div class="label">
+								<label for="selectYAttribute">y attribute</label>
+							</div>
+							<div class="select">
+								<select id="selectYAttribute" onchange="selectYAttribute.apply(this, arguments);" ></select>
+							</div>
+						</div>
+						<div class="group leafGroup">
+							<div class="label">
+								<label for="selectSortingAttribute">sorting attribute</label>
+							</div>
+							<div class="select">
+								<select id="selectSortingAttribute" onchange="selectSortingAttribute.apply(this, arguments);" ></select>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+	<div class="button">
+		<button type="button" onclick="onApplyClick();">apply</button>
+	</div>
+</html>
