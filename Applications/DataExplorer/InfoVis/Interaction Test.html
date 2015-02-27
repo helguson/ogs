@@ -561,10 +561,16 @@ their base data accessors to access present categories.
 
 						return {
 							name: seriesSelection.name,
-							baseDataAccessor: dataSetManager.managedDataSets[seriesSelection.dataSetIndex].accessor,
 							xAttribute: categories[seriesSelection.xAttributeColumnIndex],
 							yAttribute: categories[seriesSelection.yAttributeColumnIndex],
-							sortingAttribute: categories[seriesSelection.sortingAttributeColumnIndex]
+							sortingAttribute: categories[seriesSelection.sortingAttributeColumnIndex],
+							data: {
+								baseAccessor: dataSetManager.managedDataSets[seriesSelection.dataSetIndex].accessor,
+								categoryAccessorFunctorFactory: categoryAccessorFunctorFactory,
+								typeFunctor: typeFunctor,
+								unitFunctor: unitFunctor,
+								valueFunctor: valueFunctor
+							}
 						};
 					}
 				);
@@ -572,6 +578,39 @@ their base data accessors to access present categories.
 
 				// dispatch processing
 				onApply.call(undefined, series);
+			}
+
+			var categoryAccessorFunctorFactory = function(exampleElementAccessor, category){
+
+				var indexOfCategory = exampleElementAccessor.indexOf(
+					function(elementAccessor, descendingIndex){
+
+						return elementAccessor.meta("column").meta("column_element_name").access() == category;
+					}
+				);
+
+				return function(elementAccessor){
+
+					return elementAccessor.at(indexOfCategory);
+				}
+			}
+
+			// @brief returns for a given category accessor an accessor for the related value
+			var typeFunctor = function(categoryAccessor){
+
+				return categoryAccessor.meta("column").meta("column_element_type");
+			}
+
+			// @brief returns for a given category accessor an accessor for the related unit
+			var unitFunctor = function(categoryAccessor){
+
+				return categoryAccessor.meta("column").meta("column_element_unit");
+			}
+
+			// @brief returns for a given category accessor an accessor for the related value
+			var valueFunctor = function(categoryAccessor){
+
+				return categoryAccessor;
 			}
 
 		</script>

@@ -63,6 +63,7 @@ set(
 	"inheritance.js"
 	"Interaction Test.html"
 	"history.js"
+	"rickshawFacade.js"
 )
 
 set(
