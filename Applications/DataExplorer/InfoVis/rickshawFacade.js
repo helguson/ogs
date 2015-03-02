@@ -22,6 +22,7 @@ RickshawFacade = function(containerHtmlId){
 RickshawFacade.Y_AXIS_DO_CLASS = "y_axis";
 RickshawFacade.CHART_DO_CLASS = "chart";
 RickshawFacade.RANGESLIDER_DO_CLASS = "range_slider";
+RickshawFacade.CHART_AND_SLIDER_DO_CLASS = "chart_and_slider_group";
 
 /**
  * @param seriesData = [
@@ -350,11 +351,14 @@ RickshawFacade.prototype.setUp = function(seriesData){
 			.attr("class", RickshawFacade.Y_AXIS_DO_CLASS);
 		this._yAxisDO = getDOFrom(yAxisSelection);
 
-		var chartSelection = containerSelection.append("div")
+		var group = containerSelection.append("div")
+			.attr("class", RickshawFacade.CHART_AND_SLIDER_DO_CLASS);
+
+		var chartSelection = group.append("div")
 			.attr("class", RickshawFacade.CHART_DO_CLASS);
 		this._chartDO = getDOFrom(chartSelection);
 
-		var rangeSliderSelection = containerSelection.append("div")
+		var rangeSliderSelection = group.append("div")
 			.attr("class", RickshawFacade.RANGESLIDER_DO_CLASS);
 		this._rangeSliderDO = getDOFrom(rangeSliderSelection);
 	}
