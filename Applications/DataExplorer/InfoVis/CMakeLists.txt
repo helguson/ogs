@@ -62,7 +62,6 @@ set(
 	"infovis.js"
 	"inheritance.js"
 	"Interaction Test.html"
-	"history.js"
 	"rickshawFacade.js"
 )
 
