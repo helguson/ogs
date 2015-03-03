@@ -127,10 +127,6 @@ public:
 	/// Adds a vector of stations with the given name and colour to GEOObjects.
 	virtual void addStationVec(std::vector<Point*>* stations, std::string &name);
 
-	/// Filters a list of stations with the given name based on the criteria in PropertyBounds.
-	/// (See property system in Station class for more information.)
-	std::vector<Point*>* filterStationVec(const std::string &name,
-	                                      const std::vector<PropertyBounds> &bounds);
 	/// Returns the station vector with the given name.
 	const std::vector<Point*>* getStationVec(const std::string &name) const;
 
@@ -244,7 +240,7 @@ public:
 	 * Stations points are not included in the resulting merged geometry.
 	 * @param names the names of the geometries that are to be merged
 	 * @param merged_geo_name the name of the resulting geometry
-	 * @return 1 if success, 0 if the mergelist only contains one geometry and -1 if no point-list is found for one of the geometries
+	 * @return 0 if success, 1 if no point-list is found for at least one of the geometries and 2 if the mergelist only contains less than two geometry
 	 */
 	int mergeGeometries(std::vector<std::string> const & names, std::string &merged_geo_name);
 

@@ -16,17 +16,16 @@ set(SOURCES
 	LicenseDialog.cpp
 	LinearEditDialog.cpp
 	LineEditDialog.cpp
-	ListPropertiesDialog.cpp
 	MergeGeometriesDialog.cpp
 	MeshAnalysisDialog.cpp
 	MeshElementRemovalDialog.cpp
+	MeshQualitySelectionDialog.cpp
 	MeshValueEditDialog.cpp
 	ModellingTabWidget.cpp
 	ModelTreeItem.cpp
 	MeshLayerEditDialog.cpp
 	MshItem.cpp
 	MshModel.cpp
-	MshQualitySelectionDialog.cpp
 	MshTabWidget.cpp
 	MshView.cpp
 	NetCdfConfigureDialog.cpp
@@ -57,15 +56,14 @@ set(MOC_HEADERS
 	LicenseDialog.h
 	LinearEditDialog.h
 	LineEditDialog.h
-	ListPropertiesDialog.h
 	MergeGeometriesDialog.h
 	MeshAnalysisDialog.h
 	MeshElementRemovalDialog.h
+	MeshQualitySelectionDialog.h
 	MeshValueEditDialog.h
 	ModellingTabWidget.h
 	MeshLayerEditDialog.h
 	MshModel.h
-	MshQualitySelectionDialog.h
 	MshTabWidget.h
 	MshView.h
 	NetCdfConfigureDialog.h
@@ -105,11 +103,11 @@ set(UIS
 	LineEdit.ui
 	MergeGeometries.ui
 	MeshAnalysis.ui
+	MeshQualitySelection.ui
 	MeshValueEdit.ui
 	ModellingTabWidgetBase.ui
 	MeshElementRemoval.ui
 	MeshLayerEdit.ui
-	MshQualitySelection.ui
 	MshTabWidgetBase.ui
 	NetCdfConfigure.ui
 	NewProcess.ui

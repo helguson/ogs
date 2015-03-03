@@ -38,11 +38,10 @@
 #include "GMSHPrefsDialog.h"
 #include "LicenseDialog.h"
 #include "LineEditDialog.h"
-#include "ListPropertiesDialog.h"
 #include "MergeGeometriesDialog.h"
 #include "MeshAnalysisDialog.h"
 #include "MeshElementRemovalDialog.h"
-#include "MshQualitySelectionDialog.h"
+#include "MeshQualitySelectionDialog.h"
 #include "NetCdfConfigureDialog.h"
 #include "SetNameDialog.h"
 #include "VisPrefsDialog.h"
@@ -330,11 +329,6 @@ MainWindow::MainWindow(QWidget* parent /* = 0*/)
 	connect(presentationMenu, SIGNAL(aboutToShow()), this,
 	        SLOT(createPresentationMenu()));
 	menuWindows->insertMenu(showVisDockAction, presentationMenu);
-
-	// connects for station model
-	connect(stationTabWidget->treeView,
-	        SIGNAL(propertiesDialogRequested(std::string)), this,
-	        SLOT(showPropertiesDialog(std::string)));
 
 	_visPrefsDialog = new VisPrefsDialog(_vtkVisPipeline, visualizationWidget);
 }
@@ -772,17 +766,6 @@ void MainWindow::loadPetrelFiles()
 	}
 }
 
-void MainWindow::showPropertiesDialog(std::string const& name)
-{
-	ListPropertiesDialog dlg(name, dynamic_cast<GEOModels*>(_project.getGEOObjects()));
-	connect(
-	        &dlg,
-	        SIGNAL(propertyBoundariesChanged(std::string, std::vector<PropertyBounds>)),
-	        dynamic_cast<GEOModels*>(_project.getGEOObjects()),
-	        SLOT(filterStationVec(std::string, std::vector<PropertyBounds>)));
-	dlg.exec();
-}
-
 void MainWindow::showAddPipelineFilterItemDialog(QModelIndex parentIndex)
 {
 	VtkAddFilterDialog dlg(_vtkVisPipeline, parentIndex);
@@ -886,15 +869,6 @@ void MainWindow::exportBoreholesToGMS(std::string listName, std::string fileName
 	GMSInterface::writeBoreholesToGMS(stations, fileName);
 }
 
-
-void MainWindow::showFileConverter() const
-{
-	OGSFileConverter* dlg = new OGSFileConverter();
-	dlg->setAttribute(Qt::WA_DeleteOnClose);
-	dlg->show();
-	dlg->raise();
-}
-
 void MainWindow::callGMSH(std::vector<std::string> & selectedGeometries,
                           unsigned param1, double param2, double param3, double param4,
                           bool delete_geo_file)
@@ -969,6 +943,14 @@ void MainWindow::callGMSH(std::vector<std::string> & selectedGeometries,
 	QApplication::restoreOverrideCursor();
 }
 
+void MainWindow::showFileConverter() const
+{
+	OGSFileConverter* dlg = new OGSFileConverter();
+	dlg->setAttribute(Qt::WA_DeleteOnClose);
+	dlg->show();
+	dlg->raise();
+}
+
 void MainWindow::showDiagramPrefsDialog(QModelIndex &index)
 {
 	QString listName;
@@ -1000,23 +982,17 @@ void MainWindow::showDiagramPrefsDialog()
 		prefs->show();
 	}
 }
-/* TODO6
-void MainWindow::showFileConverterDialog()
-{
-	OGSFileConverter dlg;
-	dlg.exec();
-}
-*/
+
 void MainWindow::showGeoNameDialog(const std::string &geometry_name, const GeoLib::GEOTYPE object_type, size_t id)
 {
 	std::string old_name = this->_project.getGEOObjects()->getElementNameByID(geometry_name, object_type, id);
-	SetNameDialog dlg(geometry_name, GeoLib::convertGeoTypeToString(object_type), id, old_name);
-	connect(&dlg, SIGNAL(requestNameChange(const std::string&, const GeoLib::GEOTYPE, std::size_t, std::string)),
-			dynamic_cast<GEOModels*>(_project.getGEOObjects()), SLOT(addNameForElement(const std::string&, const GeoLib::GEOTYPE, std::size_t, std::string)));
-	dlg.exec();
+	SetNameDialog dlg(GeoLib::convertGeoTypeToString(object_type), id, old_name);
+	if (dlg.exec() != QDialog::Accepted)
+		return;
 
+	static_cast<GEOModels*>(_project.getGEOObjects())->addNameForElement(geometry_name, object_type, id, dlg.getNewName());
 	static_cast<GeoTreeModel*>(this->geoTabWidget->treeView->model())->setNameForItem(geometry_name, object_type,
-		id,	this->_project.getGEOObjects()->getElementNameByID(geometry_name, object_type, id));
+		id, this->_project.getGEOObjects()->getElementNameByID(geometry_name, object_type, id));
 }
 
 void MainWindow::showMeshElementRemovalDialog()
@@ -1052,15 +1028,19 @@ void MainWindow::showGMSHPrefsDialog()
 void MainWindow::showMergeGeometriesDialog()
 {
 	MergeGeometriesDialog dlg(_project.getGEOObjects());
-	dlg.exec();
+	if (dlg.exec() != QDialog::Accepted)
+		return;
+	std::string name (dlg.getGeometryName());
+	if (_project.getGEOObjects()->mergeGeometries(dlg.getSelectedGeometries(), name) < 0)
+		OGSError::box("Points are missing for\n at least one geometry.");
 }
 
 void MainWindow::showMshQualitySelectionDialog(VtkMeshSource* mshSource)
 {
-	MshQualitySelectionDialog dlg(mshSource);
-	connect(&dlg, SIGNAL(measureSelected(VtkMeshSource *, MeshQualityType)),
-	        _vtkVisPipeline, SLOT(checkMeshQuality(VtkMeshSource *, MeshQualityType)));
-	dlg.exec();
+	MshQualitySelectionDialog dlg;
+	if (dlg.exec() != QDialog::Accepted)
+		return;
+	_vtkVisPipeline->checkMeshQuality(mshSource, dlg.getSelectedMetric());
 }
 
 void MainWindow::showVisalizationPrefsDialog()

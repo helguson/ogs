@@ -128,19 +128,6 @@ void GEOObjects::addStationVec(std::vector<Point*>* stations, std::string &name)
 	_pnt_vecs.push_back(new PointVec(name, stations, nullptr, PointVec::PointType::STATION));
 }
 
-std::vector<Point*>* GEOObjects::filterStationVec(const std::string &name,
-                                                  const std::vector<PropertyBounds> &bounds)
-{
-	for (std::vector<PointVec*>::iterator it(_pnt_vecs.begin());
-	     it != _pnt_vecs.end(); ++it)
-		if ((*it)->getName().compare(name) == 0 && (*it)->getType()
-		    == PointVec::PointType::STATION)
-			return (*it)->filterStations(bounds);
-
-	INFO("GEOObjects::filterStations() - No entry found with name \"%s\".", name.c_str());
-	return nullptr;
-}
-
 const std::vector<Point*>* GEOObjects::getStationVec(const std::string &name) const
 {
 	for (std::vector<PointVec*>::const_iterator it(_pnt_vecs.begin());
@@ -390,23 +377,23 @@ const std::string GEOObjects::getElementNameByID(const std::string &geometry_nam
 }
 
 int GEOObjects::mergeGeometries (std::vector<std::string> const & geo_names,
-                                  std::string &merged_geo_name)
+                                 std::string &merged_geo_name)
 {
 	const std::size_t n_geo_names(geo_names.size());
 
 	if (n_geo_names < 2)
-		return 0;
+		return 2;
 
 	std::vector<std::size_t> pnt_offsets(n_geo_names, 0);
 
 	if (! mergePoints(geo_names, merged_geo_name, pnt_offsets))
-		return -1;
+		return 1;
 
 	mergePolylines(geo_names, merged_geo_name, pnt_offsets);
 
 	mergeSurfaces(geo_names, merged_geo_name, pnt_offsets);
 
-	return 1;
+	return 0;
 }
 
 bool GEOObjects::mergePoints(std::vector<std::string> const & geo_names,
