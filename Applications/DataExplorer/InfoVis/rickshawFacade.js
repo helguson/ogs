@@ -372,7 +372,8 @@ RickshawFacade.prototype.setUp = function(seriesData){
 				element: this._chartDO,
 				width: 700,
 				height: 300,
-				series: series
+				series: series,
+				unstack: true
 			}
 		);
 
