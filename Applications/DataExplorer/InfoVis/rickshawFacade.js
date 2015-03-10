@@ -8,11 +8,13 @@ RickshawFacade = function(containerHtmlId){
 	this._yAxisDO		= undefined;
 	this._chartDO		= undefined;
 	this._rangeSliderDO	= undefined;
+	this._legendDO		= undefined;
 	// rickshaw objects
 	this._graph		= undefined;
 	this._xAxis		= undefined;
 	this._yAxis		= undefined;
 	this._rangeSlider	= undefined;
+	this._legend		= undefined;
 	// other
 	this._seriesData	= undefined;
 
@@ -23,6 +25,7 @@ RickshawFacade.Y_AXIS_DO_CLASS = "y_axis";
 RickshawFacade.CHART_DO_CLASS = "chart";
 RickshawFacade.RANGESLIDER_DO_CLASS = "range_slider";
 RickshawFacade.CHART_AND_SLIDER_DO_CLASS = "chart_and_slider_group";
+RickshawFacade.LEGEND_DO_CLASS = "legend";
 
 /**
  * @param seriesData = [
@@ -188,6 +191,16 @@ RickshawFacade.prototype.setUp = function(seriesData){
 			graph: this._graph,
 			element: this._rangeSliderDO
 		} );
+
+		this._legend = new Rickshaw.Graph.Legend({
+			graph: this._graph,
+			element: this._legendDO
+		});
+
+		var shelving = new Rickshaw.Graph.Behavior.Series.Toggle({
+			graph: this._graph,
+			legend: this._legend
+		});
 	}
 
 	// @param this - current rickshawFacade
@@ -361,6 +374,10 @@ RickshawFacade.prototype.setUp = function(seriesData){
 		var rangeSliderSelection = group.append("div")
 			.attr("class", RickshawFacade.RANGESLIDER_DO_CLASS);
 		this._rangeSliderDO = getDOFrom(rangeSliderSelection);
+
+		var legendSelection = group.append("div")
+			.attr("class", RickshawFacade.LEGEND_DO_CLASS);
+		this._legendDO = getDOFrom(legendSelection);
 	}
 
 	// @param this - current rickshawFacade
