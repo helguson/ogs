@@ -387,7 +387,7 @@ RickshawFacade.prototype.setUp = function(seriesData){
 		this._graph = new Rickshaw.Graph(
 			{
 				element: this._chartDO,
-				width: 700,
+				width: 675,
 				height: 300,
 				series: series,
 				unstack: true
@@ -425,6 +425,11 @@ RickshawFacade.prototype.render = function(){
 }
 
 
+RickshawFacade.dateIsDefined = function(date){
+
+	return date !== null && date !== undefined && date !== NaN;
+}
+
 // TODO: move to definition of types (?)
 RickshawFacade.standardTimeCompareFunctorFactory = function(categoryFunctor, valueFunctor){
 
@@ -439,7 +444,13 @@ RickshawFacade.standardTimeCompareFunctorFactory = function(categoryFunctor, val
 
 RickshawFacade.standardTimeCompareFunctor = function(a, b){
 
-	return a.getTime() - b.getTime();
+	var result = null;
+
+	if(RickshawFacade.dateIsDefined(a) && RickshawFacade.dateIsDefined(b)){
+		result = a.getTime() - b.getTime();
+	}
+
+	return result;
 }
 
 RickshawFacade.standardNumberCompareFunctorFactory = function(categoryFunctor, valueFunctor){
@@ -455,12 +466,24 @@ RickshawFacade.standardNumberCompareFunctorFactory = function(categoryFunctor, v
 
 RickshawFacade.standardNumberCompareFunctor = function(a, b){
 
-	return a-b;
+	var result = null;
+
+	if(RickshawFacade.dateIsDefined(a) && RickshawFacade.dateIsDefined(b)){
+		result = a-b;
+	}
+
+	return result;
 }
 
 RickshawFacade.standardNumberProcessDateFunctor = function(date){
 
-	return date;
+	var result = null;
+
+	if(RickshawFacade.dateIsDefined(date)){
+		result = date;
+	}
+
+	return result;
 }
 /**
  * @see http://code.shutterstock.com/rickshaw/tutorial/introduction.html#example_03
@@ -468,5 +491,11 @@ RickshawFacade.standardNumberProcessDateFunctor = function(date){
  */
 RickshawFacade.standardTimeProcessDateFunctor = function(date){
 
-	return date.getTime()/1000;
+	var result = null;
+
+	if(RickshawFacade.dateIsDefined(date)){
+		result = date.getTime()/1000;
+	}
+
+	return result;
 }
