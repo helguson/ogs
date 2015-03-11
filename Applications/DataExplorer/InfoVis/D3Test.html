@@ -93,13 +93,23 @@
 					}
 				);
 
-				// add to iframe
+				setUpParameterArea(baseDataAccessor, "dataSet"+transferredDataSetCounter.toString());
+
+			}
+
+			function setUpParameterArea(baseDataAccessor, name){
+
 				var iframe = document.getElementById("parameterArea");
 				iframe.contentWindow.dataSetManager.addDataSet(
 					baseDataAccessor,
 					"dataSet"+transferredDataSetCounter.toString()
 				);
 
+				// factory for initial colors
+				var palette = new Rickshaw.Color.Palette();
+				iframe.contentWindow.colorFactory = function(){
+					return palette.color();
+				};
 			}
 
 			function onApplySeries(seriesList){

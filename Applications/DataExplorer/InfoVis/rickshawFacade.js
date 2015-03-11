@@ -215,17 +215,13 @@ RickshawFacade.prototype.setUp = function(seriesData){
 	// @param this - current rickshawFacade
 	var generateGraphSeries = function(){
 
-		var colorPalette = new Rickshaw.Color.Palette();
-
 		return this._seriesData.map(
-			processSingleSeries,
-			colorPalette
+			processSingleSeries
 		);
 	}
 
 	/**
 	 * @brief generates data series format for a rickshaw graph from a single given series
-	 * @param this - a Rickshaw.Color.Palette
 	 */
 	var processSingleSeries = function(series){
 
@@ -249,7 +245,7 @@ RickshawFacade.prototype.setUp = function(seriesData){
 		return {
 			name: series.name,
 			data: data,
-			color: this.color()
+			color: series.color
 		};
 	}
 

@@ -47,11 +47,6 @@ their base data accessors to access present categories.
 			//### variables ###
 			//#################
 
-			var onApply = function(series){
-				console.log("replace me");
-				console.log(series);
-			};
-
 			SeriesSelection = function(){
 
 				this.name = "";
@@ -62,6 +57,11 @@ their base data accessors to access present categories.
 				this.xAttributeColumnIndex = 0;
 				this.sortingAttributeOptionIndex = 0;
 				this.sortingAttributeColumnIndex = 0;
+				this.color = colorFactory();
+			}
+
+			var colorFactory = function(){
+				return "#000000"
 			}
 
 			/**
@@ -124,6 +124,7 @@ their base data accessors to access present categories.
 			function onLoad(){
 
 				//setUpDummy();
+				disableSelectColor();
 			}
 
 			function setUpDummy(){
@@ -219,10 +220,13 @@ their base data accessors to access present categories.
 				if(isValidOptionIndex(this.selectedIndex)){
 
 					updateSelectDataSet();
+					enableSelectColor();
+					updateSelectColor();
 				}
 				else{
 					d3.select("#seriesAttributeArea").selectAll("option")
 						.remove();
+					disableSelectColor();
 				}
 
 
@@ -348,6 +352,36 @@ their base data accessors to access present categories.
 				);
 			}
 
+			// @param this - <input>
+			function selectColor(e){
+
+				var series = getCurrentSeries();
+
+				series.color = this.value;
+			}
+
+			function enableSelectColor(){
+
+				var selectColorDO = d3.select("#selectColor")[0][0];
+
+				selectColorDO.disabled = false;
+			}
+
+			function disableSelectColor(){
+
+				var selectColorDO = d3.select("#selectColor")[0][0];
+
+				selectColorDO.disabled = true;
+			}
+
+			function updateSelectColor(){
+
+				var selectColorDO = d3.select("#selectColor")[0][0];
+				var series = getCurrentSeries();
+
+				selectColorDO.value = series.color;
+			}
+
 
 			// @param this - <select>
 			function selectXAttribute(e){
@@ -401,7 +435,8 @@ their base data accessors to access present categories.
 								typeFunctor: typeFunctor,
 								unitFunctor: unitFunctor,
 								valueFunctor: valueFunctor
-							}
+							},
+							color: seriesSelection.color
 						};
 					}
 				);
@@ -476,6 +511,14 @@ their base data accessors to access present categories.
 						</div>
 						<div class="select">
 							<select id="selectDataSet" onchange="selectDataSet.apply(this, arguments);" ></select>
+						</div>
+					</div>
+					<div class="group leafGroup">
+						<div class="label">
+							<label for"selectColor">color</label>
+						</div>
+						<div class="select">
+							<input id="selectColor" type="color" onchange="selectColor.apply(this, arguments);" ></input>
 						</div>
 					</div>
 				</div>
