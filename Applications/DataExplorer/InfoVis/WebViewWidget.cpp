@@ -1,7 +1,7 @@
 /**
  * \file
- * \author Lars Bilke
- * \date   2014-11-03
+ * \author Lars Bilke, Thomas Hennig
+ * \date   2015-03-24
  * \brief  Implementation of the WebViewWidget class.
  *
  * \copyright
@@ -55,8 +55,6 @@ void WebViewWidget::setUpSignalSlotConnections(){
 void WebViewWidget::announceToJavascript()
 {
 	QWebFrame *frame = this->webView->page()->mainFrame();
-	frame->addToJavaScriptWindowObject("qtPushButton", this->pushButton);
-	
 	this->gate->announceYourselfTo(frame);
 }
 
