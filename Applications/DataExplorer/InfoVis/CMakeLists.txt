@@ -4,12 +4,16 @@ set( SOURCES
 	JavaScriptGate.cpp
 	DSVFormatReader.cpp
 	DataBuilder.cpp
+	HistogramWidget.cpp
+	TimeSeriesWidget.cpp
 )
 
 # Moc headers
 set( MOC_HEADERS
 	WebViewWidget.h
 	JavaScriptGate.h
+	HistogramWidget.h
+	TimeSeriesWidget.h
 )
 
 # Header files

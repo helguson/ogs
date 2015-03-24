@@ -46,7 +46,7 @@
 #include "SetNameDialog.h"
 #include "VisPrefsDialog.h"
 #include "VtkAddFilterDialog.h"
-#include "WebViewWidget.h"
+#include "TimeSeriesWidget.h"
 
 #include "SHPImportDialog.h"
 
@@ -1056,12 +1056,8 @@ void MainWindow::showDataExplorerSettingsDialog()
 
 void MainWindow::FEMTestStart()
 {
-	WebViewWidget *webViewWidget = new WebViewWidget();
-	webViewWidget->setAttribute(Qt::WA_DeleteOnClose);
-	//dlg.webView->load(QUrl("http://bl.ocks.org/mbostock/4061502"));
-	//webViewWidget->webView->load(QUrl("qrc:///HTML/D3Test.html"));
-	webViewWidget->webView->load(QUrl("./QtWebkitRessources/D3Test.html"));
-	webViewWidget->show();
+	TimeSeriesWidget *timeSeriesWidget = new TimeSeriesWidget();
+	timeSeriesWidget->show();
 }
 
 void MainWindow::ShowWindow()

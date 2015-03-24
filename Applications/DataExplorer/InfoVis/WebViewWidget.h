@@ -16,17 +16,8 @@
 #define WEBVIEWDIALOG_H
 
 #include "ui_WebViewWidget.h"
+
 #include "JavaScriptGate.h"
-
-#include <QVariant>
-#include <QString>
-#include <QRegExp>
-
-#include <QTextStream>
-
-#include <memory>
-#include <vector>
-
 
 /**
  * \brief a test environement for transferring data to JavaScript in order to
@@ -40,17 +31,18 @@ public:
 	/// Constructor
 	WebViewWidget(QWidget* parent = 0);
 
-	~WebViewWidget(void);
+	virtual ~WebViewWidget(void);
 
 public slots:
 	void announceToJavascript();
 	
 private:
-	JavaScriptGate*	gate;
-
-	void setUpSignalSlotConnections();
 	void enableDebugging();
-	void loadTestData();
+	
+protected:
+	JavaScriptGate*	gate;
+	
+	void setUpSignalSlotConnections();
 };
 
 

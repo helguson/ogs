@@ -16,7 +16,6 @@
 
 #include <QWebFrame>
 
-#include "DSVFormatReader.h"
 
 WebViewWidget::WebViewWidget(QWidget* parent)
 :
@@ -29,7 +28,6 @@ WebViewWidget::WebViewWidget(QWidget* parent)
 	this->setUpSignalSlotConnections();
 	this->enableDebugging();
 	
-	this->loadTestData();
 }
 
 
@@ -58,23 +56,4 @@ void WebViewWidget::announceToJavascript()
 	this->gate->announceYourselfTo(frame);
 }
 
-void WebViewWidget::loadTestData(){
-	try{
-		QString relativeFilePath = "../../data/DB/";
-		QString fileName = "Cosmic-Ray-Station Seelhausener See _Cosmic Ray Station 2_.csv";
-		QRegExp delimiter(",");
-		QVariantList attributeStructures = DSVFormatReader::getValidStructures();
-		
-		DSVFormatReader reader(delimiter, attributeStructures);
-		reader.processFile(relativeFilePath + fileName);
-		
-		this->gate->storeAndTransfer(
-			reader.getValues(),
-			reader.getMetaDataRelation(),
-			reader.getBaseDataIndices()
-		);
-	}
-	catch(int i){
-		// TODO: implement
-	}
-}
+
