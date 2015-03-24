@@ -14,6 +14,7 @@
 #define BASELIB_HISTOGRAM_H
 
 #include <algorithm>
+#include <functional>
 #include <cmath>
 #include <iterator>
 #include <ostream>
@@ -23,7 +24,8 @@ namespace BaseLib
 {
 /** Basic Histogram implementation.
  *
- * Creates histogram from input data of type \c T.
+ * Creates histogram from input data of type \c T counting elements for intervals
+ * [min, b1),[b1, b2), ... ,[bn-1, bn),[bn, max]
  */
 template <typename T>
 class Histogram
@@ -86,11 +88,21 @@ public:
 		DataCI itEnd;
 		for (unsigned int bin = 0; bin < _nr_bins; bin++)
 		{
-			itEnd = std::upper_bound(it, (DataCI)_data.end(),
-			                         _min + (bin + 1) * _bin_width);
+			
+			itEnd = getIteratorToNextGreaterOrEqualElement<DataCI>(
+					it,
+					(DataCI)_data.end(),
+			                _min + (bin + 1) * _bin_width
+			);
+			
 			_histogram[bin] = std::distance(it, itEnd);
+			
 			it = itEnd;
 		}
+		
+		_histogram[_nr_bins-1] += std::distance(it, (DataCI)_data.end());
+		
+		
 		_dirty = false;
 	}
 
@@ -112,7 +124,7 @@ public:
 		for (unsigned int bin = 0; bin < _nr_bins; ++bin)
 		{
 			os << "[" << _min + bin * _bin_width << ", " << _min +
-			        (bin + 1) * _bin_width << ")\t";
+			        (bin + 1) * _bin_width << ((bin==_nr_bins-1)?"]\t":")\t");
 			os << _histogram[bin] << "\t";
 
 			const int n_stars =
@@ -148,6 +160,44 @@ protected:
 
 private:
 	bool _dirty; ///< When set \c update() will recompute histogram.
+	
+	
+	/**
+	 * @brief determines iterator to first element that is greater or equal
+	 * to a given value
+	 * @param first - iterator to first element that is under test
+	 * @param last - iterator to first element after last element that is
+	 * under test
+	 * @param value - renference value for comparison 
+	 * @return iterator to first element that is considered greater or equal
+	 * \c value or \c last if no element between \c first and \c last
+	 * satisfies the criteria
+	 * 
+	 * modification of http://www.cplusplus.com/reference/algorithm/upper_bound/
+	 */
+	template <typename ForwardIterator>
+	static ForwardIterator getIteratorToNextGreaterOrEqualElement(ForwardIterator first, ForwardIterator last, T const & value){
+		
+		ForwardIterator it;
+		typename std::iterator_traits<ForwardIterator>::difference_type count, step;
+		
+		count = std::distance(first,last);
+		
+		while (count>0)
+		{
+			it = first;
+			step=count/2;
+			std::advance(it,step);
+			
+			if (!(typename std::greater_equal<T>::greater_equal()(*it,value))){
+				it++;
+				first=it;
+				count-=step+1;
+			}
+			else count=step;
+		}
+		return first;
+	}
 };
 
 /** Writes histogram to output stream.
