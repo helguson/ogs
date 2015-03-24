@@ -3,7 +3,7 @@ set( SOURCES
 	WebViewWidget.cpp
 	JavaScriptGate.cpp
 	DSVFormatReader.cpp
-	Data.cpp
+	DataBuilder.cpp
 )
 
 # Moc headers
@@ -15,7 +15,7 @@ set( MOC_HEADERS
 # Header files
 set( HEADERS
 	DSVFormatReader.h
-	Data.h
+	DataBuilder.h
 )
 
 # UI files

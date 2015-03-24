@@ -9,7 +9,7 @@
 #include <QTextStream>
 #include <memory>
 
-#include "Data.h"
+#include "DataBuilder.h"
 
 /**
  * @brief class to read files in delimiter-seperated-values format

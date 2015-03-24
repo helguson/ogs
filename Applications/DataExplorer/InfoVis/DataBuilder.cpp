@@ -1,4 +1,4 @@
-#include "Data.h"
+#include "DataBuilder.h"
 
 DataBuilder::DataBuilder()
 :
@@ -10,7 +10,7 @@ int DataBuilder::addDateAndReturnIndex(QVariant date){
 	
 	this->values.push_back(date);
 	
-	// create metaDataRelatio entry for this value
+	// create metaDataRelation entry for this value
 	this->metaDataRelation.push_back(QList<int>());
 	
 	return this->values.length()-1;

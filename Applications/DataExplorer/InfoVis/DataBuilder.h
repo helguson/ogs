@@ -1,5 +1,5 @@
-#ifndef DATA_H
-#define DATA_H
+#ifndef DATABUILDER_H
+#define DATABUILDER_H
 
 #include <QVariant>
 
@@ -38,4 +38,4 @@ private:
 };
 
 
-#endif // DATA_H
+#endif // DATABUILDER_H
