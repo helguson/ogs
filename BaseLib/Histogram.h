@@ -19,13 +19,18 @@
 #include <iterator>
 #include <ostream>
 #include <vector>
+#include <memory>
+
+#include "HistogramClassIntervalFactory.h"
+#include "HistogramEqualSizedClassIntervalsFactory.h"
+#include "Interval.h"
 
 namespace BaseLib
 {
 /** Basic Histogram implementation.
  *
  * Creates histogram from input data of type \c T counting elements for intervals
- * [min, b1),[b1, b2), ... ,[bn-1, bn),[bn, max]
+ * [min, b1),[b1, b2), ... ,[bn-1, bn),[bn, max] with min <= b1 <= b2 ... <= bn-1 <= bn <= max
  */
 template <typename T>
 class Histogram
@@ -33,7 +38,12 @@ class Histogram
 public:
 	typedef typename std::vector<T> Data; ///< Underlying input data vector
 	                                      ///  type.
-
+	
+	typedef typename histogram::ClassIntervalFactory<T> FactoryInterface;
+	typedef typename std::unique_ptr<FactoryInterface> FactoryPtr;
+	typedef	typename histogram::EqualSizedClassIntervalsFactory<T> DefaultFactory;
+	typedef typename std::unique_ptr<DefaultFactory> DefaultFactoryPtr;
+	
 public:
 	/** Creates histogram of the given element in the range \c [first, last).
 	 *
@@ -43,13 +53,15 @@ public:
 	 * \param nr_bins Number of bins in histogram.
 	 * \param computeHistogram Compute histogram if set. If not set user must
 	 *        call \c update() before accessing data.
+	 * \param classIntervalFactory - factory object for creation of intervals
 	 */
 	template <typename InputIterator>
-	Histogram(InputIterator first, InputIterator last, const int nr_bins = 16,
-	          const bool computeHistogram = true )
-		: _data(first, last), _nr_bins(nr_bins)
+	Histogram(InputIterator first, InputIterator last, size_t const & nr_bins = 16,
+	          const bool computeHistogram = true,
+		  FactoryPtr classIntervalFactory = std::move(DefaultFactoryPtr(new DefaultFactory())))
+	: _data(first, last), classIntervalFactory(std::move(classIntervalFactory))
 	{
-		init(computeHistogram);
+		init(computeHistogram, nr_bins);
 	}
 
 	/** Creates histogram from \c std::vector.
@@ -57,12 +69,14 @@ public:
 	 * \param nr_bins Number of bins in histogram.
 	 * \param computeHistogram Compute histogram if set. If not set user must call
 	 * \c update() before accessing data.
+	 * \param classIntervalFactory - factory object for creation of intervals
 	 */
-	Histogram(std::vector<T> const& data, const unsigned int nr_bins = 16,
-	          const bool computeHistogram = true)
-		: _data(data), _nr_bins(nr_bins)
+	Histogram(std::vector<T> const& data, size_t const & nr_bins = 16,
+	          const bool computeHistogram = true,
+		  FactoryPtr classIntervalFactory = std::move(DefaultFactoryPtr(new DefaultFactory())))
+	: _data(data), classIntervalFactory(std::move(classIntervalFactory))
 	{
-		init(computeHistogram);
+		init(computeHistogram, nr_bins);
 	}
 
 	/** Updates histogram using sorted \c _data vector.
@@ -75,57 +89,53 @@ public:
 	                   it             itEnd - 1      itEnd
 	   \endverbatim
 	 */
-	void
-	update()
+	void update()
 	{
 		if (!_dirty)
 			return;
-
-		_bin_width = (_max - _min) / _nr_bins;
-
-		typedef typename Data::const_iterator DataCI;
-		DataCI it = _data.begin();
-		DataCI itEnd;
-		for (unsigned int bin = 0; bin < _nr_bins; bin++)
-		{
-			
-			itEnd = getIteratorToNextGreaterOrEqualElement<DataCI>(
-					it,
-					(DataCI)_data.end(),
-			                _min + (bin + 1) * _bin_width
-			);
-			
-			_histogram[bin] = std::distance(it, itEnd);
-			
-			it = itEnd;
-		}
 		
-		_histogram[_nr_bins-1] += std::distance(it, (DataCI)_data.end());
+		// determine intervals
+		this->classIntervals = this->classIntervalFactory->createClassIntervals();
+
+		// allocate enough bins
+		_histogram.resize(this->classIntervals.size());
 		
+		this->determineHistogram();
 		
 		_dirty = false;
 	}
 
-	void setMinimum(const T& minimum) { _min = minimum; _dirty = true; }
-	void setMaximum(const T& maximum) { _max = maximum; _dirty = true; }
+	void setMinimum(T const & value) { this->classIntervalFactory->setMinValueTo(value); _dirty = true; }
+	void setMaximum(T const & value) { this->classIntervalFactory->setMaxValueTo(value); _dirty = true; }
+	void setNrBins(size_t const & value){ this->classIntervalFactory->setNumberOfClassesTo(value); _dirty = true; }
 
 	const Data& getSortedData() const { return _data; }
 	const std::vector<std::size_t>& getBinCounts() const { return _histogram; }
-	const unsigned int& getNrBins() const { return _nr_bins; }
-	const T& getMinimum() const { return _min; }
-	const T& getMaximum() const { return _max; }
-	const T& getBinWidth() const { return _bin_width; }
+	size_t const & getNrBins() const { return this->classIntervalFactory->getNumberOfClasses(); }
+	const T& getMinimum() const { return this->classIntervalFactory->getMinValue(); }
+	const T& getMaximum() const { return this->classIntervalFactory->getMaxValue(); }
+	std::vector<T> const getBinWidth() const {
+		std::vector<T> result;
+		
+		for(Interval<T> currentInterval: this->classIntervals){
+			
+			result.push_back(currentInterval.getWidth());
+		}
+		
+		return result;
+	}
 
 	void
 	prettyPrint(std::ostream& os, const unsigned int line_width = 16) const
 	{
 		const std::size_t count_max =
 		        *std::max_element(_histogram.begin(), _histogram.end());
-		for (unsigned int bin = 0; bin < _nr_bins; ++bin)
+		
+		for (unsigned int bin = 0; bin < _histogram.size(); ++bin)
 		{
-			os << "[" << _min + bin * _bin_width << ", " << _min +
-			        (bin + 1) * _bin_width << ((bin==_nr_bins-1)?"]\t":")\t");
-			os << _histogram[bin] << "\t";
+			os << this->classIntervals[bin];
+			      
+			os << "\t" << _histogram[bin] << "\t";
 
 			const int n_stars =
 			        std::ceil(line_width * ((double)_histogram[bin] / count_max));
@@ -134,52 +144,30 @@ public:
 			os << "\n";
 		}
 	}
-
-protected:
-	/** Initialize class members after constructor call.
-	 */
-	void init(const bool computeHistogram = true)
-	{
-		std::sort(_data.begin(), _data.end());
-		_histogram.resize(_nr_bins);
-		_min = _data.front();
-		_max = _data.back();
-		_bin_width = (_max - _min) / _nr_bins;
-
-		_dirty = true;
-		if (computeHistogram)
-			update();
-	}
-
-protected:
-	Data _data;
-	const unsigned int _nr_bins;
-	std::vector<std::size_t> _histogram;
-	T _min, _max; ///< Minimum and maximum input data values.
-	T _bin_width;
-
-private:
-	bool _dirty; ///< When set \c update() will recompute histogram.
-	
 	
 	/**
-	 * @brief determines iterator to first element that is greater or equal
-	 * to a given value
+	 * @brief determines iterator to first element that satisfies a given predicate
 	 * @param first - iterator to first element that is under test
 	 * @param last - iterator to first element after last element that is
 	 * under test
-	 * @param value - renference value for comparison 
+	 * @param predicate - TODO
+	 * assert for every given predicate P: there is an element E in [first, last)
+	 * with every element Eb before E: Eb does not satisfy P; every element Ea 
+	 * after and including E: Ea satisfies P
 	 * @return iterator to first element that is considered greater or equal
 	 * \c value or \c last if no element between \c first and \c last
 	 * satisfies the criteria
 	 * 
+	 * 
 	 * modification of http://www.cplusplus.com/reference/algorithm/upper_bound/
 	 */
 	template <typename ForwardIterator>
-	static ForwardIterator getIteratorToNextGreaterOrEqualElement(ForwardIterator first, ForwardIterator last, T const & value){
+	static ForwardIterator getIteratorToNextElementSatisfyingPredicate(ForwardIterator first, ForwardIterator last, std::function<bool(T)> predicate){
+		
+		using DifferenceType = typename std::iterator_traits<ForwardIterator>::difference_type;
 		
 		ForwardIterator it;
-		typename std::iterator_traits<ForwardIterator>::difference_type count, step;
+		DifferenceType count, step;
 		
 		count = std::distance(first,last);
 		
@@ -189,7 +177,7 @@ private:
 			step=count/2;
 			std::advance(it,step);
 			
-			if (!(typename std::greater_equal<T>::greater_equal()(*it,value))){
+			if (!(predicate(*it))){
 				it++;
 				first=it;
 				count-=step+1;
@@ -198,6 +186,79 @@ private:
 		}
 		return first;
 	}
+	
+	
+
+protected:
+	/** Initialize class members after constructor call.
+	 */
+	void init(const bool computeHistogram, size_t const & nr_bins)
+	{
+		std::sort(_data.begin(), _data.end());
+		
+		this->setMinimum(_data.front());
+		this->setMaximum(_data.back());
+		this->setNrBins(nr_bins);
+		
+		if (computeHistogram)
+			update();
+	}
+	
+	// assert valid class intervals
+	//	every element between min and max is contained in exactly one interval
+	void determineHistogram(){
+		
+		typedef typename Data::const_iterator DataCI;
+		typedef typename std::function<bool(T)> Predicate_T;
+		
+		Interval<T> firstInterval = this->classIntervals.front();
+		Predicate_T firstValidElementPredicate =
+			[firstInterval](T const & value)
+			{
+				return !(value < firstInterval);
+			};
+		
+		// skipping elements that are not contained in first interval
+		DataCI it = getIteratorToNextElementSatisfyingPredicate<DataCI>(
+			(DataCI) _data.begin(),
+			(DataCI) _data.end(),
+			firstValidElementPredicate
+		);
+		DataCI itEnd;
+		
+		
+		for (size_t bin = 0; bin < this->classIntervalFactory->getNumberOfClasses(); bin++)
+		{		
+			Interval<T> currentInterval = this->classIntervals[bin];
+			Predicate_T notContainedInCurrentIntervalPredicate =
+				[currentInterval](T const & value)
+				{
+					return !currentInterval.contains(value);
+				};
+			
+			itEnd = getIteratorToNextElementSatisfyingPredicate<DataCI>(
+					it,
+					(DataCI)_data.end(),
+			                notContainedInCurrentIntervalPredicate
+			);
+			
+			_histogram[bin] = std::distance(it, itEnd);
+			
+			it = itEnd;
+		}
+		
+		// elements greater than last interval are skipped
+	}
+
+protected:
+	Data _data;
+	std::vector<size_t> _histogram;
+	
+	FactoryPtr classIntervalFactory;
+	std::vector<Interval<T>> classIntervals;
+
+private:
+	bool _dirty; ///< When set \c update() will recompute histogram.
 };
 
 /** Writes histogram to output stream.

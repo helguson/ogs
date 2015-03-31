@@ -510,10 +510,10 @@ void VtkVisPipeline::checkMeshQuality(VtkMeshSource* source, MeshQualityType t)
 			nclasses = histogram.getNrBins();
 			std::vector<size_t> const& bin_cnts(histogram.getBinCounts());
 			const double min (histogram.getMinimum());
-			const double bin_width (histogram.getBinWidth());
+			std::vector<double> const bin_width (histogram.getBinWidth());
 
 			for (size_t k(0); k < nclasses; k++)
-				out << min+k*bin_width << " " << bin_cnts[k] << "\n";
+				out << min+k*bin_width[k] << " " << bin_cnts[k] << "\n";
 			out.close ();
 		} else {
 			std::cerr << "could not open file mesh_histgram.txt\n";
