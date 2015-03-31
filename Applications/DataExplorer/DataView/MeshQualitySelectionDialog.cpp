@@ -51,3 +51,7 @@ void MshQualitySelectionDialog::reject()
 {
 	this->done(QDialog::Rejected);
 }
+
+bool MshQualitySelectionDialog::userRequestsHistogram(){
+	return this->checkBoxRequestHistogram->isChecked();
+}

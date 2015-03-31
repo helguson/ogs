@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>256</width>
-    <height>257</height>
+    <width>292</width>
+    <height>294</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -56,6 +56,16 @@
        </widget>
       </item>
      </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkBoxRequestHistogram">
+     <property name="text">
+      <string>show histogram</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
     </widget>
    </item>
    <item>

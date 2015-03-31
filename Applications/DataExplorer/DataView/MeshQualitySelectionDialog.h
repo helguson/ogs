@@ -33,6 +33,8 @@ public:
 	~MshQualitySelectionDialog(void);
 
 	MeshQualityType getSelectedMetric() { return _metric; }
+	
+	bool userRequestsHistogram();
 
 private:
 	MeshQualityType _metric;
