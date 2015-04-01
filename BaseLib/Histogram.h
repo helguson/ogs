@@ -17,28 +17,30 @@
 #include <functional>
 #include <cmath>
 #include <iterator>
-#include <ostream>
+#include <iostream>
+#include <fstream>
 #include <vector>
 #include <memory>
 
 #include "HistogramClassIntervalFactory.h"
 #include "HistogramEqualSizedClassIntervalsFactory.h"
 #include "Interval.h"
+// ThirdParty/logog
+#include "logog/include/logog.hpp"
+
 
 namespace BaseLib
 {
 /** Basic Histogram implementation.
  *
- * Creates histogram from input data of type \c T counting elements for intervals
- * [min, b1),[b1, b2), ... ,[bn-1, bn),[bn, max] with min <= b1 <= b2 ... <= bn-1 <= bn <= max
+ * Creates histogram from input data of type \c T.
  */
 template <typename T>
 class Histogram
 {
 public:
-	typedef typename std::vector<T> Data; ///< Underlying input data vector
-	                                      ///  type.
-	
+	typedef typename std::vector<T> Data; /// Underlying input data vector type.
+
 	typedef typename histogram::ClassIntervalFactory<T> FactoryInterface;
 	typedef typename std::unique_ptr<FactoryInterface> FactoryPtr;
 	typedef	typename histogram::EqualSizedClassIntervalsFactory<T> DefaultFactory;
@@ -143,6 +145,33 @@ public:
 				os << "*";
 			os << "\n";
 		}
+	}
+
+	int write(std::string const& file_name, std::string const& data_set_name, std::string const& param_name) const
+	{
+		if (file_name.empty())
+		{
+			ERR ("No file name specified.");
+			return 1;
+		}
+
+		std::ofstream out (file_name);
+		if (!out)
+		{
+			ERR("Error writing histogram: Could not open file.");
+			return 1;
+		}
+
+		out << "# Histogram for parameter " << param_name << " of data set " << data_set_name << "\n";
+		std::size_t const n_bins = this->getNrBins();
+		std::vector<size_t> const& bin_cnts(this->getBinCounts());
+		double const min (this->getMinimum());
+		std::vector<double> const bin_width (this->getBinWidth());
+
+		for (size_t k(0); k < n_bins; k++)
+			out << min+k*bin_width[k] << " " << bin_cnts[k] << "\n";
+		out.close ();
+		return 0;
 	}
 	
 	/**
