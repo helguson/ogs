@@ -54,6 +54,11 @@ public:
 	
 	
 	// methods
+	/** 
+	 * @brief creates a set of pairwise disjunct intervals with numberOfClasses 
+	 * elements, whose union equals interval [minValue, maxValue]
+	 * may contain empty intervals: (a, a)
+	 */
 	virtual std::vector<Interval<T>> createClassIntervals() const = 0;
 				 
 protected:
