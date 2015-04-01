@@ -11,7 +11,8 @@ namespace BaseLib { namespace histogram {
 
 /**
  * @author Thomas Hennig
- * 
+ * @brief implementation of \c histogram::ClassIntervalFactory that creates a set
+ * of equal sized intervals
  */
 template<typename T>
 class EqualSizedClassIntervalsFactory: public ClassIntervalFactory<T>{
@@ -28,12 +29,29 @@ public: // methods
 		for(size_t i = 0; i < limitPairs.size(); i++){
 		
 			std::pair<T, T> pair = limitPairs[i];
+			
+			bool lowerLimitIsInclusive;
+			bool upperLimitIsInclusive;
+			
+			if(pair.first != pair.second){ // normal case
+				lowerLimitIsInclusive = true;
+			}
+			else{
+				if(i < limitPairs.size()-1){ // has next
+					lowerLimitIsInclusive = false;
+				}
+				else{
+					lowerLimitIsInclusive = true;
+				}
+			}
+			
+			upperLimitIsInclusive = (i == limitPairs.size()-1);
 					 
 			Interval<T> currentInterval(
 				pair.first,
-				true,
+				lowerLimitIsInclusive,
 				pair.second,
-				i == limitPairs.size()-1
+				upperLimitIsInclusive
 			);
 			
 			intervals.push_back(currentInterval);
@@ -50,12 +68,16 @@ private:
 		T currentLimit = this->minValue;
 		limits.push_back(currentLimit);
 		
-		T totalDistance = this->maxValue - this->minValue;
-		T limitDistance = totalDistance / this->numberOfClasses;					 
+		T totalDistance = this->maxValue - this->minValue;					 
 		size_t numberOfInnerLimits = this->numberOfClasses -1;
 
 		for(size_t i = 0; i < numberOfInnerLimits; i++){
-			currentLimit += limitDistance;
+			
+			size_t limitIndex = i+1;
+			size_t maximumLimitIndex = this->numberOfClasses+1-1;
+			
+			// linear interpolation
+			currentLimit = this->minValue + (totalDistance*limitIndex/maximumLimitIndex);
 			limits.push_back(currentLimit);
 		}
 		
