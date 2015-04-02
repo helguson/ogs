@@ -59,12 +59,11 @@ public:
 		return empty_quality_vec;
 	}
 
-	/// Returns a histogram of the quality vector seperated into the given number of bins.
-	/// If no number of bins is specified, one will be calculated based on the Sturges criterium.
-	BaseLib::Histogram<double> getHistogram(std::size_t n_bins = 0) const
+	/// Returns a histogram of the quality vector
+	BaseLib::Histogram<double> getHistogram() const
 	{
 		if (_quality_tester)
-			return _quality_tester->getHistogram(static_cast<size_t>(n_bins));
+			return _quality_tester->getHistogram();
 
 		std::vector<double> empty_quality_vec(0);
 		return empty_quality_vec;
@@ -76,7 +75,13 @@ public:
 		if (_quality_tester == nullptr)
 			return 1;
 
-		BaseLib::Histogram<double> const histogram (_quality_tester->getHistogram(n_bins));
+		BaseLib::Histogram<double> histogram(_quality_tester->getHistogram());
+		
+		if(n_bins != 0){
+			histogram.setNrBins(n_bins);
+			histogram.update();
+		}
+		
 		histogram.write(file_name, _mesh.getName(), MeshQualityType2String(_type));
 		return 0;
 	}

@@ -47,38 +47,50 @@ public:
 	typedef typename std::unique_ptr<DefaultFactory> DefaultFactoryPtr;
 	
 public:
-	/** Creates histogram of the given element in the range \c [first, last).
+	/** Creates histogram of the given element in the range \c [first, last)
+	 * using Sturges criterion based on number of data elements to determine
+	 * number of bins
 	 *
 	 * Input data is copied into \c std::vector.
 	 *
 	 * \param data Range of elements to create histogram from.
-	 * \param nr_bins Number of bins in histogram.
 	 * \param computeHistogram Compute histogram if set. If not set user must
 	 *        call \c update() before accessing data.
 	 * \param classIntervalFactory - factory object for creation of intervals
 	 */
 	template <typename InputIterator>
-	Histogram(InputIterator first, InputIterator last, size_t const & nr_bins = 16,
-	          const bool computeHistogram = true,
-		  FactoryPtr classIntervalFactory = std::move(DefaultFactoryPtr(new DefaultFactory())))
-	: _data(first, last), classIntervalFactory(std::move(classIntervalFactory))
+	Histogram(
+		InputIterator first,
+		InputIterator last,
+	        const bool computeHistogram = true,
+		FactoryPtr classIntervalFactory = std::move(DefaultFactoryPtr(new DefaultFactory()))
+	)
+	:
+		_data(first, last),
+		classIntervalFactory(std::move(classIntervalFactory))
 	{
-		init(computeHistogram, nr_bins);
+		init(computeHistogram);
 	}
 
 	/** Creates histogram from \c std::vector.
+	 * using Sturges criterium based on number of data elements to determine
+	 * number of bins
+	 * 
 	 * \param data Input vector.
-	 * \param nr_bins Number of bins in histogram.
 	 * \param computeHistogram Compute histogram if set. If not set user must call
 	 * \c update() before accessing data.
 	 * \param classIntervalFactory - factory object for creation of intervals
 	 */
-	Histogram(std::vector<T> const& data, size_t const & nr_bins = 16,
-	          const bool computeHistogram = true,
-		  FactoryPtr classIntervalFactory = std::move(DefaultFactoryPtr(new DefaultFactory())))
-	: _data(data), classIntervalFactory(std::move(classIntervalFactory))
+	Histogram(
+		std::vector<T> const& data,
+	        const bool computeHistogram = true,
+		FactoryPtr classIntervalFactory = std::move(DefaultFactoryPtr(new DefaultFactory()))
+	)
+	:
+		_data(data),
+		classIntervalFactory(std::move(classIntervalFactory))
 	{
-		init(computeHistogram, nr_bins);
+		init(computeHistogram);
 	}
 
 	/** Updates histogram using sorted \c _data vector.
@@ -216,18 +228,21 @@ public:
 		return first;
 	}
 	
-	
+	static size_t sturges(size_t const & value){
+		
+		return static_cast<size_t>(1 + 3.3 * log (static_cast<float>(value)));
+	}
 
 protected:
 	/** Initialize class members after constructor call.
 	 */
-	void init(const bool computeHistogram, size_t const & nr_bins)
+	void init(const bool computeHistogram)
 	{
 		std::sort(_data.begin(), _data.end());
 		
 		this->setMinimum(_data.front());
 		this->setMaximum(_data.back());
-		this->setNrBins(nr_bins);
+		this->setNrBins(sturges(_data.size()));
 		
 		if (computeHistogram)
 			update();
