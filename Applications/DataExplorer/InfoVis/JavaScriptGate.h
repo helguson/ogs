@@ -11,6 +11,7 @@
 #include <QObject>
 #include <QVariant>
 #include <QWebFrame>
+#include <QString>
 
 #include <memory>
 
@@ -23,8 +24,8 @@ class JavaScriptGate : public QObject
 public:
 	explicit JavaScriptGate(QObject *parent = 0);
 	
-	void store(std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation, std::unique_ptr<QVariantList> baseDataIndices);
-	void storeAndTransfer(std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation, std::unique_ptr<QVariantList> baseDataIndices);
+	void store(QString description, std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation, std::unique_ptr<QVariantList> baseDataIndices);
+	void storeAndTransfer(QString description, std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation, std::unique_ptr<QVariantList> baseDataIndices);
 	
 	void announceYourselfTo(QWebFrame * frame);
 	
@@ -34,15 +35,15 @@ public slots:
 	void transferEveryStored();
 	
 signals:
-	void transferredData(QVariantList values, QVariantList metaDataRelation, QVariantList baseDataIndices);
+	void transferredData(QString description, QVariantList values, QVariantList metaDataRelation, QVariantList baseDataIndices);
 	
 private:
 	void transferStored(int index);
 	
+	std::vector<QString> descriptionStorage;
 	std::vector<std::unique_ptr<QVariantList>> valuesStorage;
 	std::vector<std::unique_ptr<QVariantList>> metaDataRelationStorage;
 	std::vector<std::unique_ptr<QVariantList>> baseDataIndicesStorage;
-	
 };
 
 #endif // JAVASCRIPTGATE_H

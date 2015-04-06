@@ -11,6 +11,7 @@ const QString JavaScriptGate::GATE_ANNOUNCEMENT_NAME = QString("gate");
 JavaScriptGate::JavaScriptGate(QObject *parent)
 :
 	QObject(parent),
+	descriptionStorage(),
 	valuesStorage(),
 	metaDataRelationStorage(),
 	baseDataIndicesStorage()
@@ -20,16 +21,18 @@ JavaScriptGate::JavaScriptGate(QObject *parent)
 //###############
 //### methods ###
 //###############
-void JavaScriptGate::store(std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation, std::unique_ptr<QVariantList> baseDataIndices){
+void JavaScriptGate::store(QString description, std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation, std::unique_ptr<QVariantList> baseDataIndices){
 	
+	this->descriptionStorage.push_back(description);
 	this->valuesStorage.push_back(std::move(values));
 	this->metaDataRelationStorage.push_back(std::move(metaDataRelation));
 	this->baseDataIndicesStorage.push_back(std::move(baseDataIndices));
 }
 
-void JavaScriptGate::storeAndTransfer(std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation, std::unique_ptr<QVariantList> baseDataIndices){
+void JavaScriptGate::storeAndTransfer(QString description, std::unique_ptr<QVariantList> values, std::unique_ptr<QVariantList> metaDataRelation, std::unique_ptr<QVariantList> baseDataIndices){
 	
 	this->store(
+		description,
 		std::move(values),
 		std::move(metaDataRelation),
 		std::move(baseDataIndices)
@@ -59,6 +62,7 @@ void JavaScriptGate::announceYourselfTo(QWebFrame* frame){
 void JavaScriptGate::transferStored(int index){
 	
 	emit transferredData(
+		this->descriptionStorage[index],
 		*(this->valuesStorage[index]),
 		*(this->metaDataRelationStorage[index]),
 		*(this->baseDataIndicesStorage[index])

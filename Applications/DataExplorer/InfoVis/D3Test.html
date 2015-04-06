@@ -76,7 +76,7 @@
 				rickshawFacade = new RickshawFacade("chart_container");
 			}
 
-			function onTransferredData(values, metaDataRelation, baseDataIndices){
+			function onTransferredData(description, values, metaDataRelation, baseDataIndices){
 
 				transferredDataSetCounter++;
 
@@ -85,6 +85,7 @@
 
 				dataSets.push(
 					{
+						description: description,
 						values: values,
 						metaDataRelation: metaDataRelation,
 						baseDataIndices: baseDataIndices,
@@ -93,16 +94,16 @@
 					}
 				);
 
-				setUpParameterArea(baseDataAccessor, "dataSet"+transferredDataSetCounter.toString());
+				setUpParameterArea(baseDataAccessor, description);
 
 			}
 
-			function setUpParameterArea(baseDataAccessor, name){
+			function setUpParameterArea(baseDataAccessor, description){
 
 				var iframe = document.getElementById("parameterArea");
 				iframe.contentWindow.dataSetManager.addDataSet(
 					baseDataAccessor,
-					"dataSet"+transferredDataSetCounter.toString()
+					description
 				);
 
 				// factory for initial colors

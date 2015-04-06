@@ -36,6 +36,7 @@ void TimeSeriesWidget::loadTestData(){
 		reader.processFile(relativeFilePath + fileName);
 		
 		this->gate->storeAndTransfer(
+			fileName,
 			reader.getValues(),
 			reader.getMetaDataRelation(),
 			reader.getBaseDataIndices()
