@@ -3,21 +3,16 @@
 
 #include <vector>
 
-#include <string>
-#include <sstream>
-#include <ostream>
-
 #include "Interval.h"
 
-/**
- * @author Thomas Hennig
- * 
- */
 
 namespace BaseLib{ namespace histogram{
 
 
 /**
+ * @author Thomas Hennig
+ * @brief interface for interval generation for \c BaseLib::Histogram
+ * 
  * assert T implements assignment operator
  */
 template<typename T>
@@ -27,31 +22,17 @@ public:
 	// constructors and deconstructors
 	
 	// getters and setters
-	ClassIntervalFactory<T> & setMinValueTo(T const & value){
-		this->minValue = value;
-		return *this;
-	}
-	ClassIntervalFactory<T> & setMaxValueTo(T const & value){
-		this->maxValue = value;
-		return *this;
-	}
-	ClassIntervalFactory<T> & setNumberOfClassesTo(size_t const & value){
-		this->numberOfClasses = value;
-		return *this;
-	}
+	virtual ClassIntervalFactory<T> & setMinValueTo(T const & value) = 0;
 	
-	T const & getMinValue() const{
-		return this->minValue;
-	}
+	virtual ClassIntervalFactory<T> & setMaxValueTo(T const & value) = 0;
 	
-	T const & getMaxValue() const{
-		return this->maxValue;
-	}
+	virtual ClassIntervalFactory<T> & setNumberOfClassesTo(size_t const & value) = 0;
 	
-	size_t const & getNumberOfClasses() const{
-		return this->numberOfClasses;
-	}
+	virtual T const & getMinValue() const = 0;
 	
+	virtual T const & getMaxValue() const = 0;
+	
+	virtual size_t const & getNumberOfClasses() const = 0;
 	
 	// methods
 	/** 
@@ -60,12 +41,7 @@ public:
 	 * may contain empty intervals: (a, a)
 	 */
 	virtual std::vector<Interval<T>> createClassIntervals() const = 0;
-				 
-protected:
-	T minValue;
-	T maxValue;
-	size_t numberOfClasses;
-	
+				 	
 };
 
 

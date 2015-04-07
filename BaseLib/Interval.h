@@ -2,6 +2,11 @@
 #define INTERVAL_H
 
 
+#include <string>
+#include <sstream>
+#include <ostream>
+
+
 namespace BaseLib{
 
 /**
@@ -36,7 +41,7 @@ public:
 	}
 	
 	bool isLowerLimitInclusive() const{
-		return this->lowerLimitInclusive;
+		return this->lowerLimitIsInclusive;
 	}
 	
 	bool isUpperLimitInclusive() const{
