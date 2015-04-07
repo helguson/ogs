@@ -16,25 +16,27 @@ public:
 	/**
 	 * @brief returns a list of all values
 	 */
-	std::unique_ptr<QVariantList> getValues();
+	std::unique_ptr<QVariantList> getValues() const;
 	/**
 	 * @brief returns a list that contains for every value V a
 	 * list that contains indices of values that are meta data
 	 * respective to V
 	 */
-	std::unique_ptr<QVariantList> getMetaDataRelation();
+	std::unique_ptr<QVariantList> getMetaDataRelation() const;
 	
 	/**
 	 * @brief clears values and meta data relations
 	 */
 	void reset();
+	
+	static QVariantList toQVariantList(QList<int> list);
 private:	
 	QVariantList values;
 	/// contains for every value V a list of indices of values that
 	/// are meta data for V
 	QList<QList<int>> metaDataRelation;
 	
-	static QVariantList toQVariantList(QList<int> list);
+
 };
 
 

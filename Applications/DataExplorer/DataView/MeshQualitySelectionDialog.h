@@ -35,20 +35,21 @@ public:
 	/// Returns selected metric
 	MeshQualityType getSelectedMetric() const { return _metric; }
 
-	/// Returns true if a histogram needs to be calculated
-	bool getHistogram() const { return this->histogramCheckBox->isChecked(); }
+	/// Returns true if the user requests a file with histogram data
+	bool userRequestsHistogramFile() const { return this->checkBoxRequestHistogramFile->isChecked(); }
 
 	/// Returns selected path for histogram (or empty string if no histogram is required)
-	std::string getHistogramPath() const { return _histogram_path; }
+	std::string getHistogramFilePath() const { return _histogram_file_path; }
 
-	bool userRequestsHistogram();
+	/// returns if the user requests a visualization of histogram data within a widget
+	bool userRequestsHistogramWidget();
 
 private:
 	MeshQualityType _metric;
-	std::string _histogram_path;
+	std::string _histogram_file_path;
 
 private slots:
-	void on_histogramCheckBox_toggled(bool is_checked) const;
+	void on_checkBoxRequestHistogramFile_toggled(bool is_checked) const;
 	void on_histogramPathButton_pressed();
 
 	void accept();

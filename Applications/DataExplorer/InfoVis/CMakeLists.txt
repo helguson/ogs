@@ -20,6 +20,7 @@ set( MOC_HEADERS
 set( HEADERS
 	DSVFormatReader.h
 	DataBuilder.h
+	HistogramDataTransformer.h
 )
 
 # UI files

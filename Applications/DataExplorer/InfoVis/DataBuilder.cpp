@@ -21,14 +21,14 @@ void DataBuilder::addAsMetaDataFor(int dateIndex, int metaDateIndex){
 	this->metaDataRelation[dateIndex].push_back(metaDateIndex);
 }
 
-std::unique_ptr<QVariantList> DataBuilder::getValues(){
+std::unique_ptr<QVariantList> DataBuilder::getValues() const{
 	
 	std::unique_ptr<QVariantList> result(new QVariantList(this->values));
 	
 	return std::move(result);
 }
 
-std::unique_ptr<QVariantList> DataBuilder::getMetaDataRelation(){
+std::unique_ptr<QVariantList> DataBuilder::getMetaDataRelation() const{
 	
 	std::unique_ptr<QVariantList> result(new QVariantList());
 	

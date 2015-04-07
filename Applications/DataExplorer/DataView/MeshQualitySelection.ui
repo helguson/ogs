@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>325</width>
-    <height>354</height>
+    <width>340</width>
+    <height>366</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,7 +25,7 @@
     </widget>
    </item>
    <item row="2" column="0" colspan="2">
-    <widget class="QCheckBox" name="histogramCheckBox">
+    <widget class="QCheckBox" name="checkBoxRequestHistogramFile">
      <property name="layoutDirection">
       <enum>Qt::LeftToRight</enum>
      </property>
@@ -212,7 +212,7 @@
     </widget>
    </item>
    <item row="1" column="0">
-    <widget class="QCheckBox" name="checkBoxRequestHistogram">
+    <widget class="QCheckBox" name="checkBoxRequestHistogramWidget">
      <property name="text">
       <string>Show histogram</string>
      </property>
@@ -226,7 +226,7 @@
   <tabstop>choiceVolume</tabstop>
   <tabstop>choiceAngles</tabstop>
   <tabstop>choiceRadius</tabstop>
-  <tabstop>histogramCheckBox</tabstop>
+  <tabstop>checkBoxRequestHistogramFile</tabstop>
   <tabstop>histogramPathEdit</tabstop>
   <tabstop>histogramPathButton</tabstop>
   <tabstop>buttonBox</tabstop>

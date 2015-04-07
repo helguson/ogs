@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8"></meta>
+		<title>Histogram</title>
+		<style>
+
+		</style>
+
+		<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
+		<script type="text/javascript" src="./inheritance.js"></script>
+		<script type="text/javascript" src="./infovis.js"></script>
+		<script type="text/javascript">
+
+			var GATE_ANNOUNCEMENT_NAME = "gate";
+
+			var dataSets = [];
+			var transferredDataSetCounter = 0;
+
+			function onLoad(){
+
+				removeMessageOfUnavailabilityOfJavaScript();
+
+				var gate = window[GATE_ANNOUNCEMENT_NAME];
+				if(gate != undefined){
+
+					// connect slots
+					gate.transferredData.connect(onTransferredData);
+
+					gate.transferEveryStored();
+				}
+				else{
+
+					throw new Error("gate / interface between QT and JS not found");
+				}
+
+				if(!isD3Available()){
+
+					throw new Error("d3.js not present");
+				}
+			}
+
+			function onTransferredData(description, values, metaDataRelation, baseDataIndices){
+
+				transferredDataSetCounter++;
+
+				var accessorFactory = new infovis.DataAccessorFactory(values, metaDataRelation);
+				var baseDataAccessor = accessorFactory.makeAccessorFrom(baseDataIndices);
+
+				dataSets.push(
+					{
+						description: description,
+						values: values,
+						metaDataRelation: metaDataRelation,
+						baseDataIndices: baseDataIndices,
+						accessorFactory: accessorFactory,
+						baseDataAccessor: baseDataAccessor
+					}
+				);
+			}
+
+		</script>
+	</head>
+	<body onload="onLoad()">
+		<p id="javaScriptNotAvailableDummy">JavaScript was not available</p>
+		<div id="chart_container">
+		</div>
+	</body>
+</html>

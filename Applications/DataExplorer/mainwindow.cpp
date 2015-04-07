@@ -14,13 +14,15 @@
 
 #include "mainwindow.h"
 
+// std
+#include <memory>
+
 // ThirdParty/logog
 #include "logog/include/logog.hpp"
 
 // BaseLib
 #include "BaseLib/BuildInfo.h"
 #include "BaseLib/FileTools.h"
-#include "BaseLib/Histogram.h"
 
 // models
 #include "ElementTreeModel.h"
@@ -49,6 +51,7 @@
 #include "VisPrefsDialog.h"
 #include "VtkAddFilterDialog.h"
 #include "TimeSeriesWidget.h"
+#include "HistogramWidget.h"
 
 #include "LastSavedFileDirectory.h"
 #include "MeshGeoToolsLib/GeoMapper.h"
@@ -1051,10 +1054,17 @@ void MainWindow::showMshQualitySelectionDialog(VtkMeshSource* mshSource)
 		return;
 	MeshQualityType const type (dlg.getSelectedMetric());
 	MeshLib::ElementQualityInterface quality_interface(*mshSource->GetMesh(), type);
+	
 	_vtkVisPipeline->showMeshElementQuality(mshSource, type, quality_interface.getQualityVector());
 
-	if (dlg.getHistogram())
-		quality_interface.writeHistogram(dlg.getHistogramPath());
+	if(dlg.userRequestsHistogramFile())
+		quality_interface.writeHistogram(dlg.getHistogramFilePath());
+
+	if(dlg.userRequestsHistogramWidget()){
+		
+		HistogramWidget *histogramWidget = new HistogramWidget(quality_interface.getQualityVector());
+		histogramWidget->show();
+	}
 }
 
 void MainWindow::showVisalizationPrefsDialog()

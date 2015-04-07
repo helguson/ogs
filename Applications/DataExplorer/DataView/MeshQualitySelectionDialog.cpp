@@ -21,7 +21,7 @@
 
 /// Constructor
 MeshQualitySelectionDialog::MeshQualitySelectionDialog(QDialog* parent)
-: QDialog(parent), _metric (MeshQualityType::EDGERATIO), _histogram_path("")
+: QDialog(parent), _metric (MeshQualityType::EDGERATIO), _histogram_file_path("")
 {
 	setupUi(this);
 	this->choiceEdges->toggle();
@@ -31,7 +31,7 @@ MeshQualitySelectionDialog::~MeshQualitySelectionDialog()
 {
 }
 
-void MeshQualitySelectionDialog::on_histogramCheckBox_toggled(bool is_checked) const
+void MeshQualitySelectionDialog::on_checkBoxRequestHistogramFile_toggled(bool is_checked) const
 {
 	histogramPathEdit->setEnabled(is_checked); 
 	histogramPathButton->setEnabled(is_checked);
@@ -63,10 +63,10 @@ void MeshQualitySelectionDialog::accept()
 	else
 		_metric = MeshQualityType::INVALID;
 
-	if (this->histogramCheckBox->isChecked())
+	if (this->checkBoxRequestHistogramFile->isChecked())
 	{
-		_histogram_path = this->histogramPathEdit->text().toStdString();
-		if (_histogram_path.empty())
+		_histogram_file_path = this->histogramPathEdit->text().toStdString();
+		if (_histogram_file_path.empty())
 		{
 			OGSError::box("No path for histogram file specified.");
 			return;
@@ -82,6 +82,6 @@ void MeshQualitySelectionDialog::reject()
 	this->done(QDialog::Rejected);
 }
 
-bool MeshQualitySelectionDialog::userRequestsHistogram(){
-	return this->checkBoxRequestHistogram->isChecked();
+bool MeshQualitySelectionDialog::userRequestsHistogramWidget(){
+	return this->checkBoxRequestHistogramWidget->isChecked();
 }
