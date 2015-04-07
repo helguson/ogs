@@ -119,15 +119,40 @@ public:
 		_dirty = false;
 	}
 
-	void setMinimum(T const & value) { this->classIntervalFactory->setMinValueTo(value); _dirty = true; }
-	void setMaximum(T const & value) { this->classIntervalFactory->setMaxValueTo(value); _dirty = true; }
-	void setNrBins(size_t const & value){ this->classIntervalFactory->setNumberOfClassesTo(value); _dirty = true; }
+	void setMinimum(T const & value) {
+		this->classIntervalFactory->setMinValueTo(value);
+		_dirty = true;
+	}
+	void setMaximum(T const & value) {
+		this->classIntervalFactory->setMaxValueTo(value);
+		_dirty = true;
+	}
+	void setNrBins(size_t const & value){
+		this->classIntervalFactory->setNumberOfClassesTo(value);
+		_dirty = true;
+	}
 
-	const Data& getSortedData() const { return _data; }
-	const std::vector<std::size_t>& getBinCounts() const { return _histogram; }
-	size_t const & getNrBins() const { return this->classIntervalFactory->getNumberOfClasses(); }
-	const T& getMinimum() const { return this->classIntervalFactory->getMinValue(); }
-	const T& getMaximum() const { return this->classIntervalFactory->getMaxValue(); }
+	const Data& getSortedData() const {
+		return _data;
+	}
+	
+	const std::vector<std::size_t>& getBinCounts() const {
+		return _histogram;
+	}
+	
+	std::vector<Interval<T>> const & getIntervals() const {
+		return this->classIntervals;
+	}
+	
+	size_t const & getNrBins() const {
+		return this->classIntervalFactory->getNumberOfClasses();
+	}
+	const T& getMinimum() const {
+		return this->classIntervalFactory->getMinValue();
+	}
+	const T& getMaximum() const {
+		return this->classIntervalFactory->getMaxValue();
+	}
 	std::vector<T> const getBinWidth() const {
 		std::vector<T> result;
 		
@@ -139,8 +164,7 @@ public:
 		return result;
 	}
 
-	void
-	prettyPrint(std::ostream& os, const unsigned int line_width = 16) const
+	void prettyPrint(std::ostream& os, const unsigned int line_width = 16) const
 	{
 		const std::size_t count_max =
 		        *std::max_element(_histogram.begin(), _histogram.end());
