@@ -63,11 +63,14 @@ set_property(TARGET QtBase PROPERTY FOLDER "DataExplorer")
 
 set(
 	FILES_TO_BE_COPIED
-	"D3Test.html"
+	"TimeSeriesVisualization.html"
 	"infovis.js"
 	"inheritance.js"
 	"Interaction Test.html"
 	"rickshawFacade.js"
+	"SVGCanvas.js"
+	"HistogramCanvas.js"
+	"callSequencer.js"
 )
 
 set(

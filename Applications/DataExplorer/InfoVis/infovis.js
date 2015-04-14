@@ -1,7 +1,9 @@
 "use strict";
 
 // define infovis package / conglomerate- / accumulation-object
-window.infovis = {};
+if(window.infovis == undefined){
+	window.infovis = {};
+}
 
 // removes error message of unavailability of JavaScript in case of availability of JavaScript
 function removeMessageOfUnavailabilityOfJavaScript(){

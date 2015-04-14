@@ -26,21 +26,21 @@ HistogramWidget::HistogramWidget(std::vector<double> const & metricsData, QWidge
 	);
 
 	std::unique_ptr<BaseLib::histogram::ClassIntervalFactory<double>> powerDistortedIntervalsFactoryPtr(
-		new BaseLib::histogram::GammaDistortedSizeClassIntervalsFactory<double>(2.72)
+		new BaseLib::histogram::GammaDistortedSizeClassIntervalsFactory<double>(2.0)
 	);
 	
 	this->processMetricsData(
-		"gamma distorted intervals",
+		"gamma distorted intervals: g(t)=t^2; t in [0, 1]",
 		metricsData,
 		std::move(powerDistortedIntervalsFactoryPtr)
 	);
 	
 	std::unique_ptr<BaseLib::histogram::ClassIntervalFactory<double>> exponentialDistortedIntervalsFactoryPtr(
-		new BaseLib::histogram::ExponentialDistortedClassIntervalsFactory<double>(2.72)
+		new BaseLib::histogram::ExponentialDistortedClassIntervalsFactory<double>(10.0)
 	);
 	
 	this->processMetricsData(
-		"exponential distorted intervals",
+		"exponential distorted intervals: g(t)=(10^t-1)/(10-1); t in [0, 1]",
 		metricsData,
 		std::move(exponentialDistortedIntervalsFactoryPtr)
 	);

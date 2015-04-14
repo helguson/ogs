@@ -4,18 +4,339 @@
 		<meta charset="utf-8"></meta>
 		<title>Histogram</title>
 		<style>
+			input.verticalSlider {
+				-webkit-appearance: slider-vertical;
+				width: 20px;
+				height: 200px;
+			}
 
+			rect.partiallyShownContextBar, rect.contextBar{
+				fill-opacity: 0.05;
+				stroke: black;
+			}
+
+			rect.barOfInterest {
+				fill-opacity: 1.0;
+
+			}
 		</style>
 
 		<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
 		<script type="text/javascript" src="./inheritance.js"></script>
 		<script type="text/javascript" src="./infovis.js"></script>
+		<script type="text/javascript" src="./SVGCanvas.js"></script>
+		<script type="text/javascript" src="./HistogramCanvas.js"></script>
+		<script type="text/javascript" src="./callSequencer.js"></script>
 		<script type="text/javascript">
+
+			"use strict";
 
 			var GATE_ANNOUNCEMENT_NAME = "gate";
 
-			var dataSets = [];
-			var transferredDataSetCounter = 0;
+			//
+			var initialTestsHavePassed = false;
+
+			var histogramCanvasIsSetUp = false;
+
+			var updateCallSequencer = new DroppingCallSequencer(5);
+
+			var histogramCanvas;
+
+			var dataManager = {
+				// attributes
+				_dataSets: [],
+				_binCountsOfCurrentlySelectedDataSet: [],
+
+				// methods
+				addDataSet: function(description, values, metaDataRelation, baseDataIndices){
+
+					var accessorFactory = new infovis.DataAccessorFactory(values, metaDataRelation);
+					var baseDataAccessor = accessorFactory.makeAccessorFrom(baseDataIndices);
+
+					this._dataSets.push(
+						{
+							description: description,
+							baseDataAccessor: baseDataAccessor
+						}
+					);
+
+					addSelectOptionForNewDataSet(
+						description,
+						this._dataSets.length-1
+					);
+
+					if(this._dataSets.length == 1){
+
+						enableGUI();
+
+						selection.setIndexOfSelectedDataSet(this._dataSets.length-1);
+					}
+				},
+				getSelectedBaseData: function(){
+
+					return this._dataSets[selection.getIndexOfSelectedDataSet()].baseDataAccessor;
+				},
+				getSelectedCountThreshold: function(){
+
+					return this._binCountsOfCurrentlySelectedDataSet[selection.getIndexOfSelectedThreshold()];
+				},
+				determineDegreesOfInterest: function(){
+
+					var threshold = this.getSelectedCountThreshold();
+
+					return this.getSelectedBaseData().split().map(
+						function(d){
+							return (d.access() <= threshold)? 1: 0;
+						}
+					);
+				},
+				updateBinCountsOfCurrentlySelectedDataSet: function(){
+
+					this._binCountsOfCurrentlySelectedDataSet = this.getSelectedBaseData()
+						.access()
+						.sort(
+							function(a, b){
+								return a-b;
+							}
+						)
+						.filter(	// remove elements that are occuring several times
+							function(element, index, originalArray){
+
+								return index == 0 || element > originalArray[index-1];
+							}
+						);
+				},
+				getBinCountsOfCurrentlySelectedDataSet: function(){
+
+					return this._binCountsOfCurrentlySelectedDataSet;
+				},
+				getNumberOfDataSets: function(){
+
+					return this._dataSets.length;
+				}
+			}
+
+			var selection = {
+				// attributes
+				_indexOfSelectedDataSet: undefined,
+				_indexOfSelectedThreshold: undefined,
+
+				// methods
+				getIndexOfSelectedDataSet: function(){
+					return this._indexOfSelectedDataSet;
+				},
+				setIndexOfSelectedDataSet: function(newIndex){
+
+					if(newIndex != this._indexOfSelectedDataSet){
+
+						this._indexOfSelectedDataSet = newIndex;
+
+						dataManager.updateBinCountsOfCurrentlySelectedDataSet();
+						setUpSlider();
+
+						if(histogramCanvasIsSetUp){
+
+							triggerUpdate();
+						}
+						else{
+
+							triggerSettingUpHistogramCanvas();
+						}
+					}
+				},
+				getIndexOfSelectedThreshold: function(){
+					return this._indexOfSelectedThreshold;
+				},
+				setIndexOfSelectedThreshold: function(newIndex){
+
+					if(newIndex != this._indexOfSelectedThreshold){
+
+						this._indexOfSelectedThreshold = newIndex;
+
+						triggerUpdate();
+
+						if(histogramCanvasIsSetUp){
+
+							triggerUpdate();
+						}
+						else{
+
+							triggerSettingUpHistogramCanvas();
+						}
+					}
+				}
+			}
+
+			/**
+			 *
+			 */
+			var updateCanvasFactory = {
+				// attributes
+				_baseDataAccessor: undefined,
+				_degreesOfInterest: undefined,
+
+				// methods
+				setBaseDataAccessor: function(accessor){
+					this._baseDataAccessor = accessor;
+				},
+				setDegreesOfInterest: function(degreesOfInterest){
+					this._degreesOfInterest = degreesOfInterest;
+				},
+				captureCurrentState: function(){
+					this.setBaseDataAccessor(dataManager.getSelectedBaseData());
+					this.setDegreesOfInterest(dataManager.determineDegreesOfInterest());
+				},
+				createUpdateCall: function(){
+
+					var dataParameters = {
+						baseDataAccessor: this._baseDataAccessor,
+						degreeOfInterestList: this._degreesOfInterest
+					};
+
+					return function(){
+
+						histogramCanvas.setDataParameters(
+							dataParameters
+						);
+
+						histogramCanvas.render();
+					};
+				}
+			};
+
+			function addSelectOptionForNewDataSet(description, value){
+
+				var newOptionSelection = getSelectSelection()
+					.append("option");
+
+				newOptionSelection
+					.text(
+						description
+					)
+					.attr(
+						"value",
+						value
+					);
+			}
+
+			function setUpSlider(){
+
+				var counts = dataManager.getBinCountsOfCurrentlySelectedDataSet();
+
+				var sliderSelection = getSliderSelection();
+				var sliderNode = sliderSelection[0][0];
+
+				var newSliderValue = counts.length-1;
+				//sliderNoder.value = newSliderValue;
+
+				sliderSelection
+					.attr(
+						"min",
+						0
+					)
+					.attr(
+						"max",
+						counts.length-1
+					)
+					.attr(
+						"step",
+						1
+					)
+					.attr(
+						"value",
+						newSliderValue
+					);
+
+				onSliderInput.call(sliderNode);
+			}
+
+
+			function getSliderSelection(){
+				return d3.select("#chart_container").select(".verticalSlider");
+			}
+
+			function getSelectSelection(){
+				return d3.select("#selectIntervalGenerationType");
+			}
+
+			/**
+			 *
+			 */
+			function enableGUI(){
+				getSliderSelection()
+					.attr(
+						"disabled",
+						null
+					);
+
+				getSelectSelection()
+					.attr(
+						"disabled",
+						null
+					);
+			}
+
+			/**
+			 *
+			 */
+			function triggerUpdate(){
+
+				// assert current state is valid == valid indices for threshold, dataSet
+				// assert histogramCanvas is present
+
+				updateCanvasFactory.captureCurrentState();
+				var call = updateCanvasFactory.createUpdateCall();
+
+				updateCallSequencer.addSynchronousCall(call);
+			}
+
+			function settingUpHistogramCanvasIsValid(){
+
+				return (!histogramCanvasIsSetUp)
+					&& (dataManager.getNumberOfDataSets() >= 1)	// data is present
+					&& (initialTestsHavePassed);
+			}
+
+			function setUpHistogramCanvas(){
+
+				var layoutParameters = {
+					height: 300
+				};
+
+				var dataParameters = {
+					baseDataAccessor: dataManager.getSelectedBaseData(),
+					degreeOfInterestList: dataManager.determineDegreesOfInterest()
+				};
+
+				histogramCanvas = new infovis.HistogramCanvas(
+					document.getElementById("chart_container"),
+					layoutParameters,
+					dataParameters
+				);
+
+				histogramCanvasIsSetUp = true;
+			}
+
+			function triggerSettingUpHistogramCanvas(){
+
+				if(settingUpHistogramCanvasIsValid()){
+
+					setUpHistogramCanvas();
+				}
+			}
+
+			//##########################
+			//### external callbacks ###
+			//##########################
+			function onTransferredData(description, values, metaDataRelation, baseDataIndices){
+
+				dataManager.addDataSet(
+					description,
+					values,
+					metaDataRelation,
+					baseDataIndices
+				);
+			}
 
 			function onLoad(){
 
@@ -38,32 +359,41 @@
 
 					throw new Error("d3.js not present");
 				}
+
+				initialTestsHavePassed = true;
+
+
+				triggerSettingUpHistogramCanvas();
 			}
 
-			function onTransferredData(description, values, metaDataRelation, baseDataIndices){
+			/**
+			 * @param this - <select>
+			 */
+			function onSelectIntervalGenerationType(){
 
-				transferredDataSetCounter++;
-
-				var accessorFactory = new infovis.DataAccessorFactory(values, metaDataRelation);
-				var baseDataAccessor = accessorFactory.makeAccessorFrom(baseDataIndices);
-
-				dataSets.push(
-					{
-						description: description,
-						values: values,
-						metaDataRelation: metaDataRelation,
-						baseDataIndices: baseDataIndices,
-						accessorFactory: accessorFactory,
-						baseDataAccessor: baseDataAccessor
-					}
-				);
+				selection.setIndexOfSelectedDataSet(this.value);
 			}
+
+
+			/**
+			 * @param this - <input type="range">
+			 */
+			function onSliderInput(){
+
+				selection.setIndexOfSelectedThreshold(this.value);
+			}
+
 
 		</script>
 	</head>
 	<body onload="onLoad()">
 		<p id="javaScriptNotAvailableDummy">JavaScript was not available</p>
 		<div id="chart_container">
+			<input type="range" class="verticalSlider" disabled="true" oninput="onSliderInput.apply(this, arguments);" onchange="onSliderInput.apply(this, arguments);"></input>
+		</div>
+		<div>
+			<label for"selectIntervalGenerationType">interval type</label>
+			<select id="selectIntervalGenerationType" onchange="onSelectIntervalGenerationType.apply(this, arguments);" disabled="true"></select>
 		</div>
 	</body>
 </html>
