@@ -11,7 +11,7 @@ if(window.infovis == undefined){
 //### HistogramCanvas ###
 //#######################
 /**
- * uses d3.js, inheritance.js
+ * uses d3.js, inheritance.js, svghoverinfo.js, interval.js
  * inherits SVGCanvas from SVGCanvas.js
  *
  * attributes
@@ -33,6 +33,11 @@ if(window.infovis == undefined){
  * - _maxCountOfInterest
  * - _maxShownValue - y max
  * - _data
+ *
+ * - _hover
+ * - _onMouseOverBarsGroup
+ * - _onMouseOutBarsGroup
+ * - _onMouseMoveBar
  */
 
 /**
@@ -53,6 +58,7 @@ container.HistogramCanvas = function(parentNode, layoutParameters, dataParameter
 	);
 
 	instance._setUpDOMStructure();
+	instance._setUpHelpers();
 
 	instance.setDataParameters(dataParameters);
 	instance.setLayoutParameters(layoutParameters);
@@ -65,12 +71,81 @@ container.HistogramCanvas.extend(infovis.SVGCanvas);
 
 container.HistogramCanvas.prototype._setUpDOMStructure = function(){
 
+	var self = this;
+
 	this._barsGroup = this._svgSelection.append("g")
-		.attr("class", "bars");
+		.attr("class", "bars")
+		.on(
+			"mouseover",
+			function(){
+				return self._onMouseOverBarsGroup.apply(this, arguments);
+			}
+		)
+		.on(
+			"mouseout",
+			function(){
+				return self._onMouseOutBarsGroup.apply(this, arguments);
+			}
+		)
 	this._xAxisGroup = this._svgSelection.append("g")
 		.attr("class", "x axis");
 	this._yAxisGroup = this._svgSelection.append("g")
 		.attr("class", "y axis");
+}
+
+container.HistogramCanvas.prototype._setUpHelpers = function(){
+
+	this._hover = new infovis.SVGHoverInfo(this._svgSelection.node());
+
+	var hover = this._hover;
+	var svgSelection = this._svgSelection;
+	var svg = svgSelection.node();
+
+	this._onMouseOverBarsGroup = function(){
+
+		hover.setVisibilityTo(true);
+	};
+
+	this._onMouseOutBarsGroup = function(){
+
+		hover.setVisibilityTo(false);
+	};
+
+	// based on "Datenmodell_Histogrammdaten.png/graphml"
+	// @param datum - [accessor, degreeOfInterest]
+	var generateInfoTextFrom = function(datum){
+
+		var accessor = datum[0];
+
+		var count = accessor.access();
+		var lowerLimitAccessor = accessor.meta("lower_limit");
+		var upperLimitAccessor = accessor.meta("upper_limit");
+
+		var interval = new infovis.Interval(
+			lowerLimitAccessor.access(),
+			lowerLimitAccessor.meta("is_inclusive").access(),
+			upperLimitAccessor.access(),
+			upperLimitAccessor.meta("is_inclusive").access()
+		);
+
+		return "x:\n" + interval.toString().replace(",", ",\n") + "\ny:\n" + count.toString();
+	}
+
+	this._onMouseMoveBar = function(){
+
+		var position = d3.mouse(svg);
+
+		var svgWidth = parseInt(svgSelection.attr("width"));
+
+		hover.setLayoutParameters({
+			alignRelativeToGivenPosition: (position[0] > svgWidth/2 ? "right": "left")
+		});
+
+		hover.setPosition(position[0], position[1]);
+
+		var datum = d3.select(this).datum();
+		hover.setTextTo(generateInfoTextFrom(datum));
+	};
 }
 
 // @param dataParameters
@@ -223,7 +298,11 @@ container.HistogramCanvas.prototype._renderBars = function(){
 
 	var svg = this._svgSelection.node;
 	barSelection.enter()
-		.append("rect");
+		.append("rect")
+		.on(
+			"mousemove",
+			this._onMouseMoveBar
+		);
 
 	var rectangleWidth = this._xScale.rangeBand();
 	setGeometricalAttributes.call(
@@ -600,9 +679,20 @@ container.HistogramCanvas.Formatter.DecimalFormat = function(numberOfSignificant
 container.HistogramCanvas.Formatter.DecimalFormat.prototype.format = function(value){
 
 	var round = Math.round;
-	var c = Math.pow(10, this._numberOfSignificantFigures);
+	var roundedValue;
 
-	var roundedValue = round(value*c)/c;
+	if(this._numberOfSignificantFigures > 0){
+
+		var c = Math.pow(10, this._numberOfSignificantFigures);
+
+		roundedValue = round(value*c)/c;
+	}
+	else{
+
+		var c = Math.pow(10, -this._numberOfSignificantFigures)
+
+		roundedValue = round(value/c)*c;
+	}
 
 	return roundedValue.toString();
 }

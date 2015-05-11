@@ -71,6 +71,8 @@ set(
 	"SVGCanvas.js"
 	"HistogramCanvas.js"
 	"callSequencer.js"
+	"svghoverinfo.js"
+	"interval.js"
 )
 
 set(
