@@ -140,7 +140,7 @@ RickshawFacade.prototype.setUp = function(seriesData){
 			{
 				graph: this._graph,
 				tickFormat: function(date){
-					return date.toString() + " " + info.unit;
+					return date.toString() + " " + unit;
 				}
 			}
 		);
@@ -315,7 +315,7 @@ RickshawFacade.prototype.setUp = function(seriesData){
 		if(type == "number"){
 
 			compareFunctor = RickshawFacade.standardNumberCompareFunctorFactory(
-				categoryAccessor,
+				categoryAccessorFunctor,
 				data.valueFunctor
 			);
 		}
