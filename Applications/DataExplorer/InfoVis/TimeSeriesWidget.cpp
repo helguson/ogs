@@ -2,6 +2,7 @@
 
 #include <QVariant>
 #include <QString>
+#include <QStringList>
 #include <QRegExp>
 
 #include <QTextStream>
@@ -27,20 +28,33 @@ TimeSeriesWidget::~TimeSeriesWidget(){
 
 void TimeSeriesWidget::loadTestData(){
 	try{
-		QString relativeFilePath = "../../data/DB/";
-		QString fileName = "Cosmic-Ray-Station Seelhausener See _Cosmic Ray Station 2_.csv";
+		QString relativeFilePath = "../../data/Bode und Selke/";
+		QStringList fileNames;
+		fileNames
+				<< "Wasserguetemessstation Bode-Selke _Gross Germersleben _GGL__.csv"
+				<< "Wasserguetemessstation Bode-Selke _HAU_Pegel  _Hausneindorf__.csv"
+				<< "Wasserguetemessstation Bode-Selke _MEI_Pegel _Meisdorf__.csv"
+				<< "Wasserguetemessstation Bode-Selke _SB_Pegel _Sauerbach_Borde__.csv";
+		
 		QRegExp delimiter(",");
 		QVariantList attributeStructures = DSVFormatReader::getValidStructures();
 
 		DSVFormatReader reader(delimiter, attributeStructures);
-		reader.processFile(relativeFilePath + fileName);
-
-		this->gate->storeAndTransfer(
-			fileName,
-			reader.getValues(),
-			reader.getMetaDataRelation(),
-			reader.getBaseDataIndices()
-		);
+		
+		for(int i = 0; i < fileNames.size(); i++){
+			
+			QString fileName = fileNames.at(i);
+			reader.processFile(relativeFilePath + fileName);
+	
+			this->gate->storeAndTransfer(
+				fileName,
+				reader.getValues(),
+				reader.getMetaDataRelation(),
+				reader.getBaseDataIndices()
+			);
+		}
+		
+		
 	}
 	catch(int i){
 		// TODO: implement
