@@ -1,0 +1,14 @@
+g.hover {
+	fill-opacity: 0.9;
+	stroke-opacity: 0.9;
+	pointer-events: none;
+}
+.hover rect.background{
+	fill: white;
+	stroke: black;
+}
+
+.hover text{
+	font-family: sans-serif;
+	font-size: 12px;
+}
